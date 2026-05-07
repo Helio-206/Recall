@@ -1,0 +1,41 @@
+{
+  "name": "recall",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Recall is a Learning OS that turns internet videos into structured learning paths.",
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter @recall/web dev",
+    "dev:web": "pnpm --filter @recall/web dev",
+    "dev:api": "cd apps/api && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:worker": "cd apps/api && rq worker recall-ingestion --url redis://localhost:6379/0",
+    "dev:infra": "docker compose up postgres redis",
+    "dev:stack": "docker compose up --build",
+    "api:migrate": "cd apps/api && alembic upgrade head",
+    "api:seed": "cd apps/api && python -m scripts.seed",
+    "api:lint": "cd apps/api && ruff check .",
+    "build": "pnpm --filter @recall/shared build && NEXT_DIST_DIR=.next-build pnpm --filter @recall/web build",
+    "lint": "pnpm --filter @recall/web lint",
+    "typecheck": "pnpm --filter @recall/shared typecheck && pnpm --filter @recall/web typecheck",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.4.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,css,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "apps/web/**/*.{ts,tsx}": [
+      "pnpm --filter @recall/web lint"
+    ]
+  }
+}

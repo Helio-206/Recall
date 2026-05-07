@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-geist: "Geist", "Inter", "Segoe UI", Arial, sans-serif;
+  --font-geist-mono: "Geist Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-sora: "Sora", "Inter", "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+  background: #0a0a0f;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    #0a0a0f;
+  background-size: 48px 48px;
+  color: #f5f7fa;
+  font-family: var(--font-geist), sans-serif;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+::selection {
+  background: rgba(47, 107, 255, 0.45);
+  color: #ffffff;
+}
+
+.app-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(47, 107, 255, 0.08), transparent 28%),
+    linear-gradient(110deg, rgba(255, 180, 87, 0.05), transparent 22%),
+    linear-gradient(90deg, rgba(10, 10, 15, 0.2), transparent 30%, rgba(10, 10, 15, 0.4));
+}
+
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #2f3140 transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: #2f3140;
+  border-radius: 999px;
+}

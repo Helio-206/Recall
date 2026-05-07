@@ -1,0 +1,44 @@
+# dependencies
+node_modules
+.pnpm-store
+dist
+
+# next
+.next
+.next-build
+out
+*.tsbuildinfo
+
+# python
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+*.egg-info
+.venv
+venv
+
+# env
+.env
+.env.web
+.env.local
+.env.*.local
+!**/.env.example
+
+# storage
+storage
+apps/api/storage
+
+# docker
+postgres-data
+redis-data
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# os/editor
+.DS_Store
+.idea

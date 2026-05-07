@@ -1,0 +1,106 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: recall-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-recall}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recall}
+      POSTGRES_DB: ${POSTGRES_DB:-recall}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-recall} -d ${POSTGRES_DB:-recall}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: recall-redis
+    restart: unless-stopped
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./apps/api
+    container_name: recall-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      INGESTION_QUEUE_NAME: ${INGESTION_QUEUE_NAME:-recall-ingestion}
+      INGESTION_JOB_TIMEOUT_SECONDS: ${INGESTION_JOB_TIMEOUT_SECONDS:-900}
+      INGESTION_RETRY_ATTEMPTS: ${INGESTION_RETRY_ATTEMPTS:-2}
+      INGESTION_MAX_PLAYLIST_ITEMS: ${INGESTION_MAX_PLAYLIST_ITEMS:-100}
+      YT_DLP_SOCKET_TIMEOUT_SECONDS: ${YT_DLP_SOCKET_TIMEOUT_SECONDS:-20}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./apps/api/storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./apps/api
+    container_name: recall-worker
+    restart: unless-stopped
+    command:
+      [
+        "rq",
+        "worker",
+        "${INGESTION_QUEUE_NAME:-recall-ingestion}",
+        "--url",
+        "${REDIS_URL:-redis://redis:6379/0}"
+      ]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      INGESTION_QUEUE_NAME: ${INGESTION_QUEUE_NAME:-recall-ingestion}
+      INGESTION_JOB_TIMEOUT_SECONDS: ${INGESTION_JOB_TIMEOUT_SECONDS:-900}
+      INGESTION_RETRY_ATTEMPTS: ${INGESTION_RETRY_ATTEMPTS:-2}
+      INGESTION_MAX_PLAYLIST_ITEMS: ${INGESTION_MAX_PLAYLIST_ITEMS:-100}
+      YT_DLP_SOCKET_TIMEOUT_SECONDS: ${YT_DLP_SOCKET_TIMEOUT_SECONDS:-20}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: recall-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
+  redis-data:

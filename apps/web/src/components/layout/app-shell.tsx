@@ -1,6 +1,7 @@
 import { AuthGate } from "@/components/auth/auth-gate";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Sidebar } from "@/components/layout/sidebar";
+import { GlobalSearchModal } from "@/components/search/global-search-modal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {children}
           </main>
         </div>
+        <GlobalSearchModal />
       </div>
     </AuthGate>
   );

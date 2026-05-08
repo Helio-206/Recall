@@ -12,6 +12,7 @@ from app.schemas.space import (
     LearningSpaceUpdate,
 )
 from app.schemas.video import VideoRead
+from app.services.search_indexing import delete_video_search_documents, sync_space_search_documents
 
 
 class LearningSpaceService:
@@ -52,12 +53,16 @@ class LearningSpaceService:
             setattr(space, key, value.strip() if isinstance(value, str) else value)
         self.db.commit()
         self.db.refresh(space)
+        sync_space_search_documents(self.db, space_id=space.id)
         return self._serialize_detail(space)
 
     def delete(self, *, space_id: UUID, user_id: UUID) -> None:
         space = self._get_model_for_user(space_id=space_id, user_id=user_id)
+        video_ids = [video.id for video in space.videos]
         self.spaces.delete(space)
         self.db.commit()
+        for video_id in video_ids:
+            delete_video_search_documents(video_id=video_id)
 
     def _get_model_for_user(self, *, space_id: UUID, user_id: UUID) -> LearningSpace:
         space = self.spaces.get_for_user(space_id=space_id, user_id=user_id)

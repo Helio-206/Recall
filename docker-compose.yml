@@ -34,6 +34,23 @@ services:
       timeout: 5s
       retries: 5
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.16
+    container_name: recall-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_MASTER_KEY: ${SEARCH_API_KEY:-}
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--spider", "http://127.0.0.1:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: ./apps/api
@@ -49,6 +66,18 @@ services:
       INGESTION_RETRY_ATTEMPTS: ${INGESTION_RETRY_ATTEMPTS:-2}
       INGESTION_MAX_PLAYLIST_ITEMS: ${INGESTION_MAX_PLAYLIST_ITEMS:-100}
       YT_DLP_SOCKET_TIMEOUT_SECONDS: ${YT_DLP_SOCKET_TIMEOUT_SECONDS:-20}
+      TRANSCRIPT_QUEUE_NAME: ${TRANSCRIPT_QUEUE_NAME:-recall-transcripts}
+      TRANSCRIPT_JOB_TIMEOUT_SECONDS: ${TRANSCRIPT_JOB_TIMEOUT_SECONDS:-7200}
+      TRANSCRIPT_RETRY_ATTEMPTS: ${TRANSCRIPT_RETRY_ATTEMPTS:-1}
+      TRANSCRIPT_TMP_PATH: ${TRANSCRIPT_TMP_PATH:-/tmp/recall-transcripts}
+      WHISPER_MODEL_NAME: ${WHISPER_MODEL_NAME:-base}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-}
+      WHISPER_FP16: ${WHISPER_FP16:-false}
+      SEARCH_ENABLED: ${SEARCH_ENABLED:-true}
+      SEARCH_BACKEND: ${SEARCH_BACKEND:-meilisearch}
+      SEARCH_URL: ${SEARCH_URL:-http://meilisearch:7700}
+      SEARCH_API_KEY: ${SEARCH_API_KEY:-}
+      SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
@@ -57,6 +86,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      meilisearch:
         condition: service_healthy
 
   worker:
@@ -70,7 +101,7 @@ services:
         "worker",
         "${INGESTION_QUEUE_NAME:-recall-ingestion}",
         "--url",
-        "${REDIS_URL:-redis://redis:6379/0}"
+        "${REDIS_URL:-redis://redis:6379/0}",
       ]
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
@@ -82,10 +113,62 @@ services:
       INGESTION_RETRY_ATTEMPTS: ${INGESTION_RETRY_ATTEMPTS:-2}
       INGESTION_MAX_PLAYLIST_ITEMS: ${INGESTION_MAX_PLAYLIST_ITEMS:-100}
       YT_DLP_SOCKET_TIMEOUT_SECONDS: ${YT_DLP_SOCKET_TIMEOUT_SECONDS:-20}
+      TRANSCRIPT_QUEUE_NAME: ${TRANSCRIPT_QUEUE_NAME:-recall-transcripts}
+      TRANSCRIPT_JOB_TIMEOUT_SECONDS: ${TRANSCRIPT_JOB_TIMEOUT_SECONDS:-7200}
+      TRANSCRIPT_RETRY_ATTEMPTS: ${TRANSCRIPT_RETRY_ATTEMPTS:-1}
+      TRANSCRIPT_TMP_PATH: ${TRANSCRIPT_TMP_PATH:-/tmp/recall-transcripts}
+      WHISPER_MODEL_NAME: ${WHISPER_MODEL_NAME:-base}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-}
+      WHISPER_FP16: ${WHISPER_FP16:-false}
+      SEARCH_ENABLED: ${SEARCH_ENABLED:-true}
+      SEARCH_BACKEND: ${SEARCH_BACKEND:-meilisearch}
+      SEARCH_URL: ${SEARCH_URL:-http://meilisearch:7700}
+      SEARCH_API_KEY: ${SEARCH_API_KEY:-}
+      SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+
+  transcript-worker:
+    build:
+      context: ./apps/api
+    container_name: recall-transcript-worker
+    restart: unless-stopped
+    command:
+      [
+        "rq",
+        "worker",
+        "${TRANSCRIPT_QUEUE_NAME:-recall-transcripts}",
+        "--url",
+        "${REDIS_URL:-redis://redis:6379/0}",
+      ]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      TRANSCRIPT_QUEUE_NAME: ${TRANSCRIPT_QUEUE_NAME:-recall-transcripts}
+      TRANSCRIPT_JOB_TIMEOUT_SECONDS: ${TRANSCRIPT_JOB_TIMEOUT_SECONDS:-7200}
+      TRANSCRIPT_RETRY_ATTEMPTS: ${TRANSCRIPT_RETRY_ATTEMPTS:-1}
+      TRANSCRIPT_TMP_PATH: ${TRANSCRIPT_TMP_PATH:-/tmp/recall-transcripts}
+      WHISPER_MODEL_NAME: ${WHISPER_MODEL_NAME:-base}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-}
+      WHISPER_FP16: ${WHISPER_FP16:-false}
+      SEARCH_ENABLED: ${SEARCH_ENABLED:-true}
+      SEARCH_BACKEND: ${SEARCH_BACKEND:-meilisearch}
+      SEARCH_URL: ${SEARCH_URL:-http://meilisearch:7700}
+      SEARCH_API_KEY: ${SEARCH_API_KEY:-}
+      SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
         condition: service_healthy
 
   web:
@@ -102,5 +185,6 @@ services:
       - api
 
 volumes:
+  meili-data:
   postgres-data:
   redis-data:

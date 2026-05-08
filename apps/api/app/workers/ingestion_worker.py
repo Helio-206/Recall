@@ -12,6 +12,7 @@ from app.repositories.sources import SourceRepository
 from app.repositories.videos import VideoRepository
 from app.services.ingestion_service import clean_error_message, merge_payload
 from app.services.metadata_extractor import MetadataExtractor
+from app.services.transcripts import enqueue_transcript_for_video
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ def process_ingestion_job(job_id: str) -> None:
                 and extracted_video.source_order == 0
                 else extracted_video.title
             )
-            videos.create(
+            video = videos.create(
                 space_id=source.space_id,
                 source_id=source.id,
                 title=video_title,
@@ -100,6 +101,7 @@ def process_ingestion_job(job_id: str) -> None:
                 transcript_status=PENDING,
                 processing_status=COMPLETED,
             )
+            enqueue_transcript_for_video(db, video=video, user_id=source.user_id)
             seen_urls.add(extracted_video.url)
             order_index += 1
             added_count += 1

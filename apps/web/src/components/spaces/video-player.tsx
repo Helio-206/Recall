@@ -1,5 +1,6 @@
 "use client";
 
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import { ExternalLink, Play } from "lucide-react";
 
 import type { RecallVideo } from "@recall/shared";
@@ -8,10 +9,78 @@ import { formatDuration, getYouTubeEmbedUrl } from "@/lib/utils";
 
 type VideoPlayerProps = {
   video?: RecallVideo | null;
+  onTimeUpdate?: (time: number) => void;
 };
 
-export function VideoPlayer({ video }: VideoPlayerProps) {
+export type VideoPlayerHandle = {
+  seekTo: (seconds: number) => void;
+};
+
+type YouTubeInfoEvent = {
+  event?: string;
+  info?: {
+    currentTime?: number;
+  };
+};
+
+export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(function VideoPlayer(
+  { video, onTimeUpdate },
+  ref,
+) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const embedUrl = video ? getYouTubeEmbedUrl(video.url) : null;
+
+  const postCommand = useCallback((func: string, args: unknown[] = []) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: "command", func, args }),
+      "*",
+    );
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      seekTo(seconds: number) {
+        postCommand("seekTo", [Math.max(0, seconds), true]);
+        onTimeUpdate?.(Math.max(0, seconds));
+      },
+    }),
+    [onTimeUpdate, postCommand],
+  );
+
+  useEffect(() => {
+    if (!embedUrl || !onTimeUpdate) return undefined;
+    const notifyTimeUpdate = onTimeUpdate;
+
+    function onMessage(event: MessageEvent) {
+      if (!["https://www.youtube-nocookie.com", "https://www.youtube.com"].includes(event.origin)) {
+        return;
+      }
+
+      let payload: YouTubeInfoEvent | null = null;
+      if (typeof event.data === "string") {
+        try {
+          payload = JSON.parse(event.data) as YouTubeInfoEvent;
+        } catch {
+          return;
+        }
+      } else if (typeof event.data === "object" && event.data !== null) {
+        payload = event.data as YouTubeInfoEvent;
+      }
+
+      if (payload?.event === "infoDelivery" && typeof payload.info?.currentTime === "number") {
+        notifyTimeUpdate(payload.info.currentTime);
+      }
+    }
+
+    window.addEventListener("message", onMessage);
+    const interval = window.setInterval(() => postCommand("getCurrentTime"), 1000);
+
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.clearInterval(interval);
+    };
+  }, [embedUrl, onTimeUpdate, postCommand]);
 
   if (!video) {
     return (
@@ -20,7 +89,9 @@ export function VideoPlayer({ video }: VideoPlayerProps) {
           <div className="mx-auto grid size-12 place-items-center rounded-md border border-border bg-background/80 text-primary">
             <Play className="size-5" />
           </div>
-          <p className="mt-4 font-heading text-lg font-semibold text-foreground">No video selected</p>
+          <p className="mt-4 font-heading text-lg font-semibold text-foreground">
+            No video selected
+          </p>
           <p className="mt-2 text-sm text-muted">Add a video to start learning inside Recall.</p>
         </div>
       </div>
@@ -33,6 +104,7 @@ export function VideoPlayer({ video }: VideoPlayerProps) {
         {embedUrl ? (
           <iframe
             key={video.id}
+            ref={iframeRef}
             src={embedUrl}
             title={video.title}
             className="absolute inset-0 h-full w-full"
@@ -59,7 +131,9 @@ export function VideoPlayer({ video }: VideoPlayerProps) {
       </div>
       <div className="flex flex-col gap-3 border-t border-border bg-surface/95 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="truncate font-heading text-base font-semibold text-foreground">{video.title}</p>
+          <p className="truncate font-heading text-base font-semibold text-foreground">
+            {video.title}
+          </p>
           <p className="mt-1 text-xs text-muted">
             {video.author || "Imported source"} - {formatDuration(video.duration)}
           </p>
@@ -73,4 +147,4 @@ export function VideoPlayer({ video }: VideoPlayerProps) {
       </div>
     </section>
   );
-}
+});

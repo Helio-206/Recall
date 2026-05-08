@@ -12,6 +12,9 @@ from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from app.models.source import Source
     from app.models.space import LearningSpace
+    from app.models.transcript_job import TranscriptJob
+    from app.models.transcript_segment import TranscriptSegment
+    from app.models.video_note import VideoNote
 
 
 class Video(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -47,3 +50,62 @@ class Video(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     space: Mapped[LearningSpace] = relationship(back_populates="videos")
     source: Mapped[Source | None] = relationship(back_populates="videos")
+    transcript_segments: Mapped[list[TranscriptSegment]] = relationship(
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="TranscriptSegment.order_index",
+    )
+    transcript_jobs: Mapped[list[TranscriptJob]] = relationship(
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    ai_summary: Mapped[object | None] = relationship(
+        "AISummary",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        uselist=False,
+        primaryjoin="Video.id == foreign(AISummary.video_id)",
+    )
+    ai_summary_jobs: Mapped[list[object]] = relationship(
+        "AISummaryJob",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    key_concepts: Mapped[list[object]] = relationship(
+        "KeyConcept",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="desc(KeyConcept.relevance_score)",
+    )
+    key_takeaways: Mapped[list[object]] = relationship(
+        "KeyTakeaway",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="KeyTakeaway.order_index",
+    )
+    review_questions: Mapped[list[object]] = relationship(
+        "ReviewQuestion",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="ReviewQuestion.order_index",
+    )
+    important_moments: Mapped[list[object]] = relationship(
+        "ImportantMoment",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="ImportantMoment.order_index",
+    )
+    notes: Mapped[list[object]] = relationship(
+        "VideoNote",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

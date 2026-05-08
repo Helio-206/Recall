@@ -1,10 +1,19 @@
 "use client";
 
-import { CheckCircle2, Circle, GripVertical, Play, Timer } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Circle,
+  FileText,
+  GripVertical,
+  Loader2,
+  Play,
+  Timer,
+} from "lucide-react";
 
 import type { RecallVideo } from "@recall/shared";
 import { Button } from "@/components/ui/button";
-import { formatDuration } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 
 type VideoCardProps = {
   video: RecallVideo;
@@ -65,6 +74,7 @@ export function VideoCard({
             <Timer className="size-3.5" />
             {formatDuration(video.duration)}
           </span>
+          <TranscriptStatus status={video.transcript_status} />
         </div>
       </button>
 
@@ -84,5 +94,38 @@ export function VideoCard({
         )}
       </Button>
     </article>
+  );
+}
+
+function TranscriptStatus({ status }: { status: RecallVideo["transcript_status"] }) {
+  const config = {
+    completed: {
+      label: "Transcript",
+      className: "text-success",
+      icon: FileText,
+    },
+    processing: {
+      label: "Transcribing",
+      className: "text-primary",
+      icon: Loader2,
+    },
+    failed: {
+      label: "Transcript failed",
+      className: "text-red-300",
+      icon: AlertCircle,
+    },
+    pending: {
+      label: "Transcript pending",
+      className: "text-muted",
+      icon: FileText,
+    },
+  }[status];
+  const Icon = config.icon;
+
+  return (
+    <span className={cn("inline-flex items-center gap-1.5", config.className)}>
+      <Icon className={cn("size-3.5", status === "processing" ? "animate-spin" : "")} />
+      {config.label}
+    </span>
   );
 }

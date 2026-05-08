@@ -19,6 +19,9 @@ class VideoRepository:
         )
         return self.db.scalar(stmt)
 
+    def get(self, video_id: UUID) -> Video | None:
+        return self.db.get(Video, video_id)
+
     def list_for_space(self, *, space_id: UUID, user_id: UUID) -> list[Video]:
         stmt = (
             select(Video)

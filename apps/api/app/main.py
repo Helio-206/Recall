@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.security import decode_access_token
+from app.services.search_indexing import ensure_search_index
 
 settings = get_settings()
 
@@ -44,6 +45,11 @@ async def jwt_context_middleware(
 
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+
+@app.on_event("startup")
+def initialize_search_indexes() -> None:
+    ensure_search_index()
 
 
 @app.get("/")

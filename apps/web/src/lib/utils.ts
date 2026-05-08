@@ -13,6 +13,19 @@ export function formatDuration(totalSeconds?: number | null) {
   return `${minutes}m`;
 }
 
+export function formatTimestamp(totalSeconds?: number | null) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds || 0));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 export function formatShortDate(date: string) {
   return new Intl.DateTimeFormat("en", {
     month: "short",
@@ -61,6 +74,8 @@ export function getYouTubeEmbedUrl(url: string) {
   const params = new URLSearchParams({
     rel: "0",
     modestbranding: "1",
+    enablejsapi: "1",
+    playsinline: "1",
   });
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 }

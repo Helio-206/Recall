@@ -76,6 +76,120 @@ export type IngestionAccepted = {
   status: ProcessingStatus;
 };
 
+export type TranscriptSegment = {
+  id: string;
+  video_id: string;
+  start_time: number;
+  end_time: number;
+  text: string;
+  order_index: number;
+  created_at: ISODateString;
+};
+
+export type TranscriptJob = {
+  id: string;
+  user_id: string;
+  video_id: string;
+  status: ProcessingStatus;
+  payload: {
+    phase?: string;
+    video_url?: string;
+    segments_count?: number;
+    model?: string;
+    method?: "youtube_captions" | "youtube_auto_captions" | "whisper";
+    language?: string;
+  };
+  error_message: string | null;
+  attempts: number;
+  started_at: ISODateString | null;
+  finished_at: ISODateString | null;
+  created_at: ISODateString;
+  updated_at: ISODateString;
+};
+
+export type VideoTranscript = {
+  video_id: string;
+  status: ProcessingStatus;
+  segments: TranscriptSegment[];
+  job: TranscriptJob | null;
+  error_message: string | null;
+};
+
+export type AISummary = {
+  id: string;
+  video_id: string;
+  short_summary: string | null;
+  detailed_summary: string | null;
+  learning_notes: string | null;
+  status: ProcessingStatus;
+  prompt_version: string;
+  created_at: ISODateString;
+  updated_at: ISODateString;
+};
+
+export type KeyConcept = {
+  id: string;
+  video_id: string;
+  concept: string;
+  relevance_score: number;
+};
+
+export type KeyTakeaway = {
+  id: string;
+  video_id: string;
+  content: string;
+  order_index: number;
+};
+
+export type ReviewQuestion = {
+  id: string;
+  video_id: string;
+  question: string;
+  answer: string;
+  order_index: number;
+};
+
+export type ImportantMoment = {
+  id: string;
+  video_id: string;
+  title: string;
+  timestamp: number;
+  description: string;
+  order_index: number;
+};
+
+export type AISummaryJob = {
+  id: string;
+  user_id: string;
+  video_id: string;
+  status: ProcessingStatus;
+  payload: {
+    phase?: string;
+    video_title?: string;
+    prompt_version?: string;
+    provider?: string;
+    chunk_count?: number;
+  };
+  error_message: string | null;
+  attempts: number;
+  started_at: ISODateString | null;
+  finished_at: ISODateString | null;
+  created_at: ISODateString;
+  updated_at: ISODateString;
+};
+
+export type VideoLearningInsights = {
+  video_id: string;
+  status: ProcessingStatus;
+  summary: AISummary | null;
+  key_concepts: KeyConcept[];
+  key_takeaways: KeyTakeaway[];
+  review_questions: ReviewQuestion[];
+  important_moments: ImportantMoment[];
+  job: AISummaryJob | null;
+  error_message: string | null;
+};
+
 export type RecallSpace = {
   id: string;
   title: string;
@@ -103,6 +217,75 @@ export type ActivityItem = {
   created_at: ISODateString;
 };
 
+export type VideoNote = {
+  id: string;
+  user_id: string;
+  video_id: string;
+  title: string | null;
+  content: string;
+  anchor_timestamp: number | null;
+  created_at: ISODateString;
+  updated_at: ISODateString;
+};
+
+export type VideoNoteUpsert = {
+  title?: string | null;
+  content: string;
+  anchor_timestamp?: number | null;
+};
+
+export type SearchKind =
+  | "all"
+  | "transcript"
+  | "note"
+  | "summary"
+  | "concept"
+  | "important_moment";
+
+export type SearchQuery = {
+  id: string;
+  query: string;
+  last_used_at: ISODateString;
+  use_count: number;
+};
+
+export type SearchResult = {
+  id: string;
+  kind: SearchKind;
+  video_id: string;
+  video_title: string;
+  space_id: string;
+  space_title: string;
+  timestamp: number | null;
+  title: string;
+  excerpt: string;
+  highlighted_excerpt: string;
+  target_tab: "transcript" | "ai-summary" | "notes";
+  relevance_score: number;
+};
+
+export type SearchResponse = {
+  query: string;
+  kind: SearchKind;
+  page: number;
+  per_page: number;
+  total: number;
+  hits: SearchResult[];
+};
+
+export type SearchQueryCreate = {
+  query: string;
+};
+
+export type SearchResultClickPayload = {
+  query: string;
+  result_kind: string;
+  result_id: string;
+  space_id: string | null;
+  video_id: string | null;
+  timestamp: number | null;
+};
+
 export const RECALL_COLORS = {
   background: "#0A0A0F",
   surface: "#111117",
@@ -110,5 +293,5 @@ export const RECALL_COLORS = {
   primary: "#2F6BFF",
   warm: "#FFB457",
   textPrimary: "#F5F7FA",
-  textSecondary: "#A1A8B3"
+  textSecondary: "#A1A8B3",
 } as const;

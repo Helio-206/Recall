@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Logo } from "@/components/logo";
+import { SearchTriggerButton } from "@/components/search/search-trigger-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
@@ -30,6 +31,8 @@ export function Sidebar() {
   return (
     <aside className="hidden min-h-screen w-72 shrink-0 border-r border-border bg-background/75 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
       <Logo />
+
+      <SearchTriggerButton className="mt-5" />
 
       <div className="mt-7 grid gap-1">
         {navItems.map((item) => {

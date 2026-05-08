@@ -8,6 +8,8 @@ from app.repositories.spaces import LearningSpaceRepository
 from app.repositories.videos import VideoRepository
 from app.schemas.video import VideoCreate, VideoRead, VideoUpdate
 from app.services.metadata import MetadataService
+from app.services.search_indexing import delete_video_search_documents, sync_video_search_documents
+from app.services.transcripts import enqueue_transcript_for_video
 
 
 class VideoService:
@@ -47,6 +49,7 @@ class VideoService:
         )
         space.updated_at = datetime.now(UTC)
         self.db.commit()
+        enqueue_transcript_for_video(self.db, video=video, user_id=user_id)
         self.db.refresh(video)
         return VideoRead.model_validate(video)
 
@@ -73,12 +76,15 @@ class VideoService:
         video.space.updated_at = datetime.now(UTC)
         self.db.commit()
         self.db.refresh(video)
+        sync_video_search_documents(self.db, video_id=video.id)
         return VideoRead.model_validate(video)
 
     def delete(self, *, video_id: UUID, user_id: UUID) -> None:
         video = self.videos.get_for_user(video_id=video_id, user_id=user_id)
         if not video:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Video not found.")
+        deleted_video_id = video.id
         video.space.updated_at = datetime.now(UTC)
         self.videos.delete(video)
         self.db.commit()
+        delete_video_search_documents(video_id=deleted_video_id)

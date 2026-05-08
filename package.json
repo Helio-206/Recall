@@ -11,9 +11,12 @@
   ],
   "scripts": {
     "dev": "pnpm --filter @recall/web dev",
+    "dev:all": "bash ./scripts/dev-all.sh",
     "dev:web": "pnpm --filter @recall/web dev",
     "dev:api": "cd apps/api && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
     "dev:worker": "cd apps/api && rq worker recall-ingestion --url redis://localhost:6379/0",
+    "dev:transcript-worker": "cd apps/api && rq worker recall-transcripts --url redis://localhost:6379/0",
+    "dev:workers": "cd apps/api && rq worker recall-ingestion recall-transcripts --url redis://localhost:6379/0",
     "dev:infra": "docker compose up postgres redis",
     "dev:stack": "docker compose up --build",
     "api:migrate": "cd apps/api && alembic upgrade head",

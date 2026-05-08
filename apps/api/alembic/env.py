@@ -8,11 +8,15 @@ from app.db.base import Base
 from app.models import (  # noqa: F401
     AISummary,
     AISummaryJob,
-    IngestionJob,
+    CurriculumReconstructionJob,
+    ExtensionSaveEvent,
     ImportantMoment,
+    IngestionJob,
     KeyConcept,
     KeyTakeaway,
+    LearningModule,
     LearningSpace,
+    ModuleVideo,
     ReviewQuestion,
     SearchQuery,
     SearchResultClick,
@@ -21,6 +25,8 @@ from app.models import (  # noqa: F401
     TranscriptSegment,
     User,
     Video,
+    VideoCurriculumProfile,
+    VideoDependency,
     VideoNote,
 )
 

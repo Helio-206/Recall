@@ -42,7 +42,10 @@ def process_ai_summary_job(job_id: str) -> None:
         if not segments:
             raise ValueError("Transcript must be completed before AI insights can be generated.")
 
-        summary = summaries.get_or_create(video_id=video.id, prompt_version=settings.ai_prompt_version)
+        summary = summaries.get_or_create(
+            video_id=video.id,
+            prompt_version=settings.ai_prompt_version,
+        )
         started_at = datetime.now(UTC)
         jobs.mark_processing(ai_job, started_at=started_at)
         summary.status = PROCESSING
@@ -62,13 +65,26 @@ def process_ai_summary_job(job_id: str) -> None:
         )
         db.commit()
 
+        ai_job.payload = merge_payload(ai_job.payload, phase="calling_ai_provider")
+        db.commit()
+
         provider = get_ai_learning_provider(prompt_version=settings.ai_prompt_version)
-        draft = provider.generate(video=video, chunks=chunks, segments=segments)
+        result = provider.generate(video=video, chunks=chunks, segments=segments)
+        draft = result.draft
 
         ai_job.payload = merge_payload(ai_job.payload, phase="extracting_concepts")
         db.commit()
 
-        ai_job.payload = merge_payload(ai_job.payload, phase="structuring_summary")
+        ai_job.payload = merge_payload(
+            ai_job.payload,
+            phase="structuring_summary",
+            provider=result.provider,
+            model=result.model,
+            fallback_model=result.fallback_model,
+            models_tried=result.models_tried,
+            request_count=result.request_count,
+            usage=result.usage,
+        )
         db.commit()
 
         summaries.replace_children(
@@ -92,6 +108,13 @@ def process_ai_summary_job(job_id: str) -> None:
             payload=merge_payload(ai_job.payload, phase="completed"),
             error_message=None,
             finished_at=datetime.now(UTC),
+        )
+        logger.info(
+            "AI summary job %s completed with provider=%s model=%s usage=%s",
+            job_id,
+            result.provider,
+            result.model,
+            result.usage,
         )
         db.commit()
         sync_video_search_documents(db, video_id=video.id)

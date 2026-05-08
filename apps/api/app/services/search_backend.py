@@ -80,7 +80,14 @@ class MeiliSearchBackend:
         except SearchBackendUnavailable:
             logger.warning("Search backend is unavailable during startup/index setup.")
 
-    def search(self, *, query: str, filter_expression: str, offset: int, limit: int) -> dict[str, Any]:
+    def search(
+        self,
+        *,
+        query: str,
+        filter_expression: str,
+        offset: int,
+        limit: int,
+    ) -> dict[str, Any]:
         if not self.enabled:
             return {"hits": [], "estimatedTotalHits": 0}
 

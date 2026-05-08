@@ -57,7 +57,7 @@ Subir Postgres e Redis:
 docker compose up -d postgres redis
 ```
 
-Se a porta `5432` ja estiver ocupada na maquina, usa `5433` no `apps/api/.env` e sobe assim:
+Por padrao, o Recall usa a porta `5433` para o Postgres local, evitando conflito com instalacoes nativas em `5432`:
 
 ```bash
 POSTGRES_PORT=5433 docker compose up -d postgres redis

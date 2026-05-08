@@ -7,9 +7,9 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.ai_summary import AISummaryJobCreate, AISummaryJobRead, VideoLearningInsightsRead
-from app.schemas.video_note import VideoNoteRead, VideoNoteUpsert
 from app.schemas.transcript import TranscriptJobCreate, TranscriptJobRead, VideoTranscriptRead
 from app.schemas.video import VideoRead, VideoUpdate
+from app.schemas.video_note import VideoNoteRead, VideoNoteUpsert
 from app.services.learning_intelligence import LearningInsightsService
 from app.services.transcripts import TranscriptService
 from app.services.video_notes import VideoNoteService

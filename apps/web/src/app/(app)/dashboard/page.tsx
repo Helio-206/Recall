@@ -8,14 +8,13 @@ import { AddVideoDialog } from "@/components/spaces/add-video-dialog";
 import { CreateSpaceDialog } from "@/components/spaces/create-space-dialog";
 import { LearningSpaceCard } from "@/components/spaces/learning-space-card";
 import { Button } from "@/components/ui/button";
-import { starterActivity } from "@/lib/mock-data";
 import { formatShortDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSpaceStore } from "@/stores/space-store";
 
 export default function DashboardPage() {
   const { token, user } = useAuthStore();
-  const { spaces, fetchSpaces, isLoading } = useSpaceStore();
+  const { spaces, fetchSpaces, isLoading, error } = useSpaceStore();
 
   useEffect(() => {
     if (token) void fetchSpaces(token);
@@ -34,7 +33,7 @@ export default function DashboardPage() {
           detail: `${space.completed_count}/${space.video_count} videos complete`,
           created_at: space.updated_at,
         }))
-      : starterActivity;
+      : [];
 
   return (
     <div className="grid gap-6">
@@ -109,21 +108,31 @@ export default function DashboardPage() {
 
         <aside className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
           <h2 className="font-heading text-lg font-semibold text-foreground">Recent Activity</h2>
-          <div className="mt-5 grid gap-3">
-            {activity.map((item) => (
-              <div key={item.id} className="rounded-md border border-border bg-background/55 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
+          {error ? (
+            <div className="mt-5 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+              Unable to load your spaces right now. {error}
+            </div>
+          ) : activity.length > 0 ? (
+            <div className="mt-5 grid gap-3">
+              {activity.map((item) => (
+                <div key={item.id} className="rounded-md border border-border bg-background/55 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+                      <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
+                    </div>
+                    <span className="shrink-0 font-mono text-xs text-muted">
+                      {formatShortDate(item.created_at)}
+                    </span>
                   </div>
-                  <span className="shrink-0 font-mono text-xs text-muted">
-                    {formatShortDate(item.created_at)}
-                  </span>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-md border border-dashed border-border bg-background/40 p-4 text-sm text-muted">
+              No recent activity yet.
+            </div>
+          )}
         </aside>
       </div>
     </div>

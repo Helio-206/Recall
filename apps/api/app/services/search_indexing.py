@@ -7,7 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.ai_summary import AISummary
-from app.models.space import LearningSpace
 from app.models.video import Video
 from app.services.search_backend import SearchBackendUnavailable, get_search_backend
 
@@ -141,7 +140,9 @@ def _build_documents(video: Video) -> list[dict[str, object]]:
         )
 
     for note in video.notes:
-        note_content = "\n\n".join(part for part in [(note.title or "").strip(), note.content.strip()] if part)
+        note_content = "\n\n".join(
+            part for part in [(note.title or "").strip(), note.content.strip()] if part
+        )
         if not note_content:
             continue
         documents.append(

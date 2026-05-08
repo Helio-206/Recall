@@ -43,7 +43,9 @@ class MetadataExtractor:
         parsed = urlparse(url)
         host = parsed.netloc.lower().removeprefix("www.")
         if parsed.scheme not in {"http", "https"} or host not in self.youtube_hosts:
-            raise MetadataExtractionError("Paste a valid YouTube video or playlist URL.")
+            raise MetadataExtractionError(
+                "Paste a valid YouTube video, playlist, or channel URL."
+            )
         return url
 
     def detect_source_type(self, url: str) -> SourceType:
@@ -54,7 +56,12 @@ class MetadataExtractor:
 
         if "list" in query or path.startswith("playlist"):
             return "playlist"
-        if path.startswith("@") or path.startswith("channel/") or path.startswith("c/"):
+        if (
+            path.startswith("@")
+            or path.startswith("channel/")
+            or path.startswith("c/")
+            or path.startswith("user/")
+        ):
             return "channel"
         if (
             host == "youtu.be"
@@ -63,12 +70,10 @@ class MetadataExtractor:
             or path.startswith("embed/")
         ):
             return "single_video"
-        raise MetadataExtractionError("Paste a valid YouTube video or playlist URL.")
+        raise MetadataExtractionError("Paste a valid YouTube video, playlist, or channel URL.")
 
     def extract(self, url: str) -> ExtractedSource:
         source_type = self.detect_source_type(url)
-        if source_type == "channel":
-            raise MetadataExtractionError("Channel ingestion is not available yet.")
 
         try:
             from yt_dlp import YoutubeDL
@@ -82,7 +87,7 @@ class MetadataExtractor:
             "no_warnings": True,
             "skip_download": True,
             "ignoreerrors": True,
-            "extract_flat": "in_playlist" if source_type == "playlist" else False,
+            "extract_flat": "in_playlist" if source_type in {"playlist", "channel"} else False,
             "noplaylist": source_type == "single_video",
             "playlistend": settings.ingestion_max_playlist_items,
             "socket_timeout": settings.yt_dlp_socket_timeout_seconds,
@@ -101,8 +106,8 @@ class MetadataExtractor:
         if not raw_info:
             raise MetadataExtractionError("No available videos were found for that source.")
 
-        if source_type == "playlist" or raw_info.get("_type") == "playlist":
-            return self._extract_playlist(raw_info)
+        if source_type in {"playlist", "channel"} or raw_info.get("_type") == "playlist":
+            return self._extract_collection(raw_info, source_type=source_type)
         return self._extract_single(raw_info)
 
     def _extract_single(self, raw_info: dict) -> ExtractedSource:
@@ -119,7 +124,7 @@ class MetadataExtractor:
             skipped_count=0,
         )
 
-    def _extract_playlist(self, raw_info: dict) -> ExtractedSource:
+    def _extract_collection(self, raw_info: dict, *, source_type: SourceType) -> ExtractedSource:
         videos: list[ExtractedVideo] = []
         skipped_count = 0
         entries = raw_info.get("entries") or []
@@ -134,10 +139,11 @@ class MetadataExtractor:
                 skipped_count += 1
 
         if not videos:
-            raise MetadataExtractionError("No available playlist videos were found.")
+            collection_label = "channel" if source_type == "channel" else "playlist"
+            raise MetadataExtractionError(f"No available {collection_label} videos were found.")
 
         return ExtractedSource(
-            source_type="playlist",
+            source_type=source_type,
             title=raw_info.get("title"),
             author=raw_info.get("uploader") or raw_info.get("channel"),
             thumbnail=self._thumbnail(raw_info) or videos[0].thumbnail,

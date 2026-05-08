@@ -2,21 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowRight, CheckCircle2, Layers3, PlayCircle, Plus, Target } from "lucide-react";
+import { ArrowRight, Loader2, Plus, Sparkles } from "lucide-react";
 
-import type { RecallVideo } from "@recall/shared";
+import type { LearningModule, RecallVideo, SpaceCurriculum } from "@recall/shared";
 import { LearningIntelligencePanel } from "@/components/ai/learning-intelligence-panel";
-import { LevelBadge } from "@/components/level-badge";
 import { VideoNotesPanel } from "@/components/notes/video-notes-panel";
-import { ProgressBar } from "@/components/progress-bar";
 import { AddVideoDialog } from "@/components/spaces/add-video-dialog";
-import { VideoCard } from "@/components/spaces/video-card";
+import { CurriculumOverview } from "@/components/spaces/curriculum-overview";
+import { CurriculumSidebar } from "@/components/spaces/curriculum-sidebar";
 import { VideoPlayer, type VideoPlayerHandle } from "@/components/spaces/video-player";
 import { TranscriptPanel } from "@/components/transcript/transcript-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAISummary } from "@/hooks/use-ai-summary";
-import { formatDuration } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSpaceStore } from "@/stores/space-store";
 
@@ -24,17 +22,48 @@ export default function SpaceDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const token = useAuthStore((state) => state.token);
-  const { selectedSpace, fetchSpace, updateVideo, isLoading, error } = useSpaceStore();
+  const {
+    selectedSpace,
+    selectedCurriculum,
+    fetchSpace,
+    fetchCurriculum,
+    updateVideo,
+    rebuildCurriculum,
+    updateCurriculumOverride,
+    isLoading,
+    isCurriculumLoading,
+    error,
+    curriculumError,
+  } = useSpaceStore();
   const [updatingVideoId, setUpdatingVideoId] = useState<string | null>(null);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [activeTimestamp, setActiveTimestamp] = useState<number | null>(null);
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
+  const [isRebuildingCurriculum, setIsRebuildingCurriculum] = useState(false);
+  const [overrideVideoId, setOverrideVideoId] = useState<string | null>(null);
   const playerRef = useRef<VideoPlayerHandle | null>(null);
 
   useEffect(() => {
     if (token && params.id) void fetchSpace(token, params.id);
   }, [fetchSpace, params.id, token]);
+
+  useEffect(() => {
+    if (token && params.id) void fetchCurriculum(token, params.id);
+  }, [fetchCurriculum, params.id, selectedSpace?.completed_count, selectedSpace?.video_count, token]);
+
+  useEffect(() => {
+    const status = selectedCurriculum?.latest_job?.status;
+    if (!token || !params.id || (status !== "pending" && status !== "processing")) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void fetchCurriculum(token, params.id);
+    }, 4000);
+
+    return () => window.clearInterval(intervalId);
+  }, [fetchCurriculum, params.id, selectedCurriculum?.latest_job?.status, token]);
 
   useEffect(() => {
     const videos = selectedSpace?.videos ?? [];
@@ -62,9 +91,12 @@ export default function SpaceDetailPage() {
   }, [fetchSpace, params.id, token]);
 
   const videos = selectedSpace?.videos ?? [];
-  const nextVideo = videos.find((video) => !video.completed) ?? videos[0];
+  const modules = selectedCurriculum?.modules ?? buildFallbackModules(videos);
+  const nextVideo =
+    videos.find((video) => video.id === selectedCurriculum?.suggested_next_video?.video_id) ??
+    videos.find((video) => !video.completed) ??
+    videos[0];
   const activeVideo = videos.find((video) => video.id === activeVideoId) ?? nextVideo ?? null;
-  const totalDuration = videos.reduce((sum, video) => sum + (video.duration || 0), 0);
 
   const aiSummary = useAISummary({
     token,
@@ -83,6 +115,45 @@ export default function SpaceDetailPage() {
       await updateVideo(token, video.id, { completed: !video.completed });
     } finally {
       setUpdatingVideoId(null);
+    }
+  }
+
+  async function onRebuildCurriculum() {
+    if (!token || !params.id) return;
+    setIsRebuildingCurriculum(true);
+    try {
+      await rebuildCurriculum(token, params.id, { force: true });
+      await fetchCurriculum(token, params.id);
+    } finally {
+      setIsRebuildingCurriculum(false);
+    }
+  }
+
+  async function onMoveVideo(videoId: string, direction: -1 | 1) {
+    if (!token || !params.id || !selectedCurriculum) return;
+    const entry = findCurriculumEntry(selectedCurriculum, videoId);
+    if (!entry) return;
+
+    const targetIndex = Math.max(0, entry.entry.order_index + direction);
+    setOverrideVideoId(videoId);
+    try {
+      await updateCurriculumOverride(token, params.id, videoId, {
+        module_title: entry.module.title,
+        order_index: targetIndex,
+        locked: true,
+      });
+    } finally {
+      setOverrideVideoId(null);
+    }
+  }
+
+  async function onResetVideo(videoId: string) {
+    if (!token || !params.id || !selectedCurriculum) return;
+    setOverrideVideoId(videoId);
+    try {
+      await updateCurriculumOverride(token, params.id, videoId, { locked: false });
+    } finally {
+      setOverrideVideoId(null);
     }
   }
 
@@ -125,10 +196,17 @@ export default function SpaceDetailPage() {
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <LevelBadge progress={selectedSpace.progress} />
+              <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-blue-100">
+                {selectedSpace.progress}% complete
+              </span>
               {selectedSpace.topic && (
                 <span className="rounded-md border border-border bg-background/70 px-2 py-0.5 text-xs text-muted">
                   {selectedSpace.topic}
+                </span>
+              )}
+              {selectedCurriculum?.latest_job?.status && (
+                <span className="rounded-md border border-border bg-background/70 px-2 py-0.5 text-xs text-muted">
+                  Curriculum {selectedCurriculum.latest_job.status}
                 </span>
               )}
             </div>
@@ -140,6 +218,15 @@ export default function SpaceDetailPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onRebuildCurriculum}
+              disabled={isRebuildingCurriculum}
+            >
+              {isRebuildingCurriculum ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              Rebuild Curriculum
+            </Button>
             <AddVideoDialog
               spaces={[selectedSpace]}
               spaceId={selectedSpace.id}
@@ -158,47 +245,24 @@ export default function SpaceDetailPage() {
             )}
           </div>
         </div>
-        <div className="mt-6">
-          <ProgressBar value={selectedSpace.progress} label="Path completion" />
-        </div>
       </header>
 
       <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
-        <aside className="rounded-lg border border-border bg-surface/80 p-4 shadow-insetPanel xl:sticky xl:top-8 xl:h-[calc(100vh-4rem)] xl:overflow-auto">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-heading text-base font-semibold text-foreground">Curriculum</h2>
-            <span className="font-mono text-xs text-muted">{videos.length} items</span>
-          </div>
-          <div className="mt-4 grid gap-2">
-            {videos.map((video) => (
-              <button
-                key={video.id}
-                type="button"
-                onClick={() => setActiveVideoId(video.id)}
-                className={[
-                  "grid grid-cols-[auto_1fr] gap-3 rounded-md border p-3 text-left transition-all hover:border-primary/40 hover:bg-white/[0.05]",
-                  activeVideo?.id === video.id
-                    ? "border-primary/55 bg-primary/10"
-                    : "border-border bg-background/55",
-                ].join(" ")}
-              >
-                <span className="mt-0.5 text-muted">
-                  {video.completed ? (
-                    <CheckCircle2 className="size-4 text-success" />
-                  ) : (
-                    <PlayCircle className="size-4" />
-                  )}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm text-foreground">{video.title}</span>
-                  <span className="mt-1 block text-xs text-muted">
-                    {formatDuration(video.duration)}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </aside>
+        <CurriculumSidebar
+          modules={modules}
+          activeVideoId={activeVideo?.id ?? null}
+          totalItems={videos.length}
+          healthScore={selectedCurriculum?.health.score ?? null}
+          jobStatus={selectedCurriculum?.latest_job?.status ?? null}
+          isLoading={isCurriculumLoading}
+          error={curriculumError}
+          isRebuilding={isRebuildingCurriculum}
+          overrideVideoId={overrideVideoId}
+          onSelectVideo={setActiveVideoId}
+          onRebuild={onRebuildCurriculum}
+          onMoveVideo={onMoveVideo}
+          onResetVideo={onResetVideo}
+        />
 
         <section className="grid min-w-0 gap-5">
           <div className="min-w-0">
@@ -217,69 +281,19 @@ export default function SpaceDetailPage() {
               </TabsList>
 
               <TabsContent value="overview">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <Metric label="Progress" value={`${selectedSpace.progress}%`} icon={Target} />
-                  <Metric
-                    label="Completed"
-                    value={selectedSpace.completed_count}
-                    icon={CheckCircle2}
-                  />
-                  <Metric label="Duration" value={formatDuration(totalDuration)} icon={Layers3} />
-                </div>
-
-                <div className="mt-5 rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h2 className="font-heading text-lg font-semibold text-foreground">
-                        Continue Learning
-                      </h2>
-                      <p className="mt-1 text-sm text-muted">
-                        {nextVideo ? nextVideo.title : "Add a video to begin this path."}
-                      </p>
-                    </div>
-                    {nextVideo ? (
-                      <Button type="button" onClick={() => setActiveVideoId(nextVideo.id)}>
-                        Open Video
-                        <ArrowRight />
-                      </Button>
-                    ) : (
-                      <AddVideoDialog
-                        spaces={[selectedSpace]}
-                        spaceId={selectedSpace.id}
-                        trigger={<Button>Add Video</Button>}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-3">
-                  {videos.length > 0 ? (
-                    videos.map((video) => (
-                      <VideoCard
-                        key={video.id}
-                        video={video}
-                        onSelect={(selectedVideo) => setActiveVideoId(selectedVideo.id)}
-                        onToggle={onToggle}
-                        isActive={activeVideo?.id === video.id}
-                        isUpdating={updatingVideoId === video.id}
-                      />
-                    ))
-                  ) : (
-                    <div className="rounded-lg border border-dashed border-border bg-surface/60 p-8 text-center">
-                      <h2 className="font-heading text-lg font-semibold text-foreground">
-                        No videos yet
-                      </h2>
-                      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
-                        Paste a YouTube link to start building this learning path.
-                      </p>
-                      <AddVideoDialog
-                        spaces={[selectedSpace]}
-                        spaceId={selectedSpace.id}
-                        trigger={<Button className="mt-5">Add Video</Button>}
-                      />
-                    </div>
-                  )}
-                </div>
+                <CurriculumOverview
+                  space={selectedSpace}
+                  modules={modules}
+                  health={selectedCurriculum?.health ?? null}
+                  nextVideo={nextVideo ?? null}
+                  suggestedNextVideo={selectedCurriculum?.suggested_next_video ?? null}
+                  activeVideoId={activeVideo?.id ?? null}
+                  updatingVideoId={updatingVideoId}
+                  isRebuilding={isRebuildingCurriculum}
+                  onSelectVideo={(video) => setActiveVideoId(video.id)}
+                  onToggleVideo={onToggle}
+                  onRebuild={onRebuildCurriculum}
+                />
               </TabsContent>
 
               <TabsContent value="transcript">
@@ -322,24 +336,45 @@ export default function SpaceDetailPage() {
   );
 }
 
-function Metric({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: number | string;
-  icon: React.ElementType;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-surface/80 p-4 shadow-insetPanel">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-muted">{label}</span>
-        <span className="grid size-8 place-items-center rounded-md border border-border bg-background/70 text-primary">
-          <Icon className="size-4" />
-        </span>
-      </div>
-      <div className="mt-4 font-heading text-2xl font-semibold text-foreground">{value}</div>
-    </div>
-  );
+function findCurriculumEntry(curriculum: SpaceCurriculum, videoId: string) {
+  for (const learningModule of curriculum.modules) {
+    const entry = learningModule.module_videos.find((item) => item.video_id === videoId);
+    if (entry) {
+      return { module: learningModule, entry };
+    }
+  }
+  return null;
+}
+
+function buildFallbackModules(videos: RecallVideo[]): LearningModule[] {
+  if (!videos.length) return [];
+  const completedCount = videos.filter((video) => video.completed).length;
+  const progress = Math.round((completedCount / videos.length) * 100);
+  return [
+    {
+      id: "fallback-module",
+      title: "Imported Sequence",
+      description: "Current ingest order before curriculum reconstruction finishes.",
+      order_index: 0,
+      difficulty_level: "Intermediate",
+      learning_objectives: [],
+      estimated_duration_minutes: Math.round(
+        videos.reduce((sum, video) => sum + (video.duration || 0), 0) / 60,
+      ),
+      rationale: "Fallback grouping derived from the existing lesson order.",
+      confidence_score: 0,
+      video_count: videos.length,
+      completed_count: completedCount,
+      progress,
+      module_videos: videos.map((video, index) => ({
+        id: `fallback-${video.id}`,
+        video_id: video.id,
+        order_index: index,
+        rationale: null,
+        confidence_score: 0,
+        is_manual_override: false,
+        video,
+      })),
+    },
+  ];
 }

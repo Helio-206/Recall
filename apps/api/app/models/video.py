@@ -10,11 +10,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.module_video import ModuleVideo
     from app.models.source import Source
     from app.models.space import LearningSpace
     from app.models.transcript_job import TranscriptJob
     from app.models.transcript_segment import TranscriptSegment
-    from app.models.video_note import VideoNote
+    from app.models.video_curriculum_profile import VideoCurriculumProfile
+    from app.models.video_dependency import VideoDependency
 
 
 class Video(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -108,4 +110,31 @@ class Video(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         back_populates="video",
         cascade="all, delete-orphan",
         passive_deletes=True,
+    )
+    curriculum_profile: Mapped[VideoCurriculumProfile | None] = relationship(
+        "VideoCurriculumProfile",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        uselist=False,
+    )
+    module_entries: Mapped[list[ModuleVideo]] = relationship(
+        "ModuleVideo",
+        back_populates="video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    prerequisite_edges: Mapped[list[VideoDependency]] = relationship(
+        "VideoDependency",
+        back_populates="dependent_video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        foreign_keys="VideoDependency.dependent_video_id",
+    )
+    dependent_edges: Mapped[list[VideoDependency]] = relationship(
+        "VideoDependency",
+        back_populates="prerequisite_video",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        foreign_keys="VideoDependency.prerequisite_video_id",
     )

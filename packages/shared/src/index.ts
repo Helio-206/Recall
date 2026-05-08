@@ -204,6 +204,122 @@ export type RecallSpace = {
   videos?: RecallVideo[];
 };
 
+export type DifficultyLevel = "Beginner" | "Intermediate" | "Advanced";
+
+export type CurriculumReconstructionRequest = {
+  force?: boolean;
+};
+
+export type CurriculumManualOverrideUpdate = {
+  module_title?: string | null;
+  order_index?: number | null;
+  locked?: boolean;
+};
+
+export type CurriculumReconstructionJob = {
+  id: string;
+  user_id: string;
+  space_id: string;
+  status: ProcessingStatus;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  payload: Record<string, unknown>;
+  error_message: string | null;
+  attempts: number;
+  started_at: ISODateString | null;
+  finished_at: ISODateString | null;
+  created_at: ISODateString;
+  updated_at: ISODateString;
+};
+
+export type VideoCurriculumProfile = {
+  id: string;
+  video_id: string;
+  primary_topic: string;
+  subtopics: string[];
+  difficulty_level: DifficultyLevel;
+  prerequisite_topics: string[];
+  extracted_keywords: string[];
+  module_hint: string | null;
+  redundancy_signals: string[];
+  estimated_sequence_score: number;
+  confidence_score: number;
+  rationale: string | null;
+  provider: string;
+  model: string;
+  prompt_version: string;
+  manual_module_title: string | null;
+  manual_order_index: number | null;
+  manual_override_locked: boolean;
+};
+
+export type VideoDependency = {
+  id: string;
+  prerequisite_video_id: string;
+  dependent_video_id: string;
+  dependency_type: string;
+  rationale: string | null;
+  confidence_score: number;
+};
+
+export type ModuleVideo = {
+  id: string;
+  video_id: string;
+  order_index: number;
+  rationale: string | null;
+  confidence_score: number;
+  is_manual_override: boolean;
+  video: RecallVideo;
+};
+
+export type LearningModule = {
+  id: string;
+  title: string;
+  description: string | null;
+  order_index: number;
+  difficulty_level: DifficultyLevel;
+  learning_objectives: string[];
+  estimated_duration_minutes: number | null;
+  rationale: string | null;
+  confidence_score: number;
+  video_count: number;
+  completed_count: number;
+  progress: number;
+  module_videos: ModuleVideo[];
+};
+
+export type SuggestedNextVideo = {
+  video_id: string;
+  module_id: string;
+  title: string;
+  module_title: string;
+  reason: string;
+  difficulty_level: DifficultyLevel;
+};
+
+export type CurriculumHealth = {
+  score: number;
+  missing_transcript_count: number;
+  dependency_count: number;
+  duplicate_topic_count: number;
+  advanced_without_foundations_count: number;
+  manual_override_count: number;
+  unassigned_video_count: number;
+  warnings: string[];
+  generated_at: ISODateString | null;
+};
+
+export type SpaceCurriculum = {
+  space_id: string;
+  modules: LearningModule[];
+  profiles: VideoCurriculumProfile[];
+  dependencies: VideoDependency[];
+  suggested_next_video: SuggestedNextVideo | null;
+  health: CurriculumHealth;
+  latest_job: CurriculumReconstructionJob | null;
+};
+
 export type AuthSession = {
   access_token: string;
   token_type: "bearer";

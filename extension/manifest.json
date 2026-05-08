@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Recall Capture",
+  "version": "0.1.0",
+  "description": "Save YouTube lessons to Recall without leaving the page.",
+  "permissions": ["activeTab", "storage", "tabs", "scripting"],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*",
+    "https://www.youtube.com/*",
+    "https://youtube.com/*",
+    "https://m.youtube.com/*",
+    "https://youtu.be/*",
+    "https://x.com/*",
+    "https://twitter.com/*",
+    "https://www.tiktok.com/*",
+    "https://www.instagram.com/*",
+    "https://vimeo.com/*",
+    "https://*.vimeo.com/*"
+  ],
+  "action": {
+    "default_title": "Recall Capture",
+    "default_popup": "popup/index.html"
+  },
+  "background": {
+    "service_worker": "background/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://youtu.be/*"
+      ],
+      "js": ["content/youtube-save-button.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

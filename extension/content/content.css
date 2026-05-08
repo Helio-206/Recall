@@ -1,0 +1,35 @@
+#recall-save-trigger {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483647;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(13, 19, 33, 0.96), rgba(20, 92, 255, 0.9));
+  color: #f7fbff;
+  padding: 12px 16px;
+  box-shadow: 0 18px 40px rgba(10, 15, 24, 0.32);
+  font: 600 13px/1.2 Aptos, "Segoe UI", sans-serif;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+#recall-save-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 46px rgba(10, 15, 24, 0.38);
+}
+
+#recall-save-trigger:active {
+  transform: translateY(0);
+}
+
+#recall-save-trigger .recall-save-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ffd166;
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.8);
+}

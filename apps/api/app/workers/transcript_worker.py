@@ -14,7 +14,6 @@ from app.repositories.transcript_segments import TranscriptSegmentRepository
 from app.repositories.videos import VideoRepository
 from app.services.audio_extractor import TemporaryAudioExtractor
 from app.services.caption_extractor import CaptionExtractionError, YouTubeCaptionExtractor
-from app.services.learning_intelligence import enqueue_learning_insights_for_video
 from app.services.search_indexing import sync_video_search_documents
 from app.services.transcription_engine import WhisperTranscriber
 from app.services.transcripts import clean_transcript_error, merge_payload
@@ -32,6 +31,9 @@ def process_transcript_job(job_id: str) -> None:
         transcript_job = jobs.get(UUID(job_id))
         if not transcript_job:
             logger.error("Transcript job %s was not found.", job_id)
+            return
+        if transcript_job.status == COMPLETED:
+            logger.info("Transcript job %s was already completed. Skipping worker execution.", job_id)
             return
 
         video = videos.get(transcript_job.video_id)
@@ -125,7 +127,6 @@ def process_transcript_job(job_id: str) -> None:
         )
         db.commit()
         sync_video_search_documents(db, video_id=video.id)
-        enqueue_learning_insights_for_video(db, video=video, user_id=transcript_job.user_id)
         db.commit()
     except Exception as exc:
         logger.exception("Transcript job %s failed.", job_id)

@@ -14,7 +14,15 @@ class VideoNoteRepository:
         stmt = select(VideoNote).where(VideoNote.video_id == video_id, VideoNote.user_id == user_id)
         return self.db.scalar(stmt)
 
-    def create(self, *, video_id: UUID, user_id: UUID, title: str | None, content: str, anchor_timestamp: float | None) -> VideoNote:
+    def create(
+        self,
+        *,
+        video_id: UUID,
+        user_id: UUID,
+        title: str | None,
+        content: str,
+        anchor_timestamp: float | None,
+    ) -> VideoNote:
         note = VideoNote(
             video_id=video_id,
             user_id=user_id,

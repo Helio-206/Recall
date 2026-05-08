@@ -6,6 +6,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
+from app.core.config import get_settings
 from app.models.transcript_segment import TranscriptSegment
 from app.models.video import Video
 from app.services.ai_chunking import TranscriptChunk
@@ -73,6 +74,17 @@ class LearningInsightsDraft(BaseModel):
     important_moments: list[ImportantMomentDraft]
 
 
+class LearningProviderResult(BaseModel):
+    draft: LearningInsightsDraft
+    provider: str
+    model: str
+    usage: dict[str, int] = Field(default_factory=dict)
+    request_count: int = 0
+    chunk_count: int = 0
+    fallback_model: str | None = None
+    models_tried: list[str] = Field(default_factory=list)
+
+
 class AILearningProvider(Protocol):
     def generate(
         self,
@@ -80,7 +92,7 @@ class AILearningProvider(Protocol):
         video: Video,
         chunks: list[TranscriptChunk],
         segments: list[TranscriptSegment],
-    ) -> LearningInsightsDraft: ...
+    ) -> LearningProviderResult: ...
 
 
 class HeuristicLearningProvider:
@@ -93,10 +105,15 @@ class HeuristicLearningProvider:
         video: Video,
         chunks: list[TranscriptChunk],
         segments: list[TranscriptSegment],
-    ) -> LearningInsightsDraft:
-        chunk_summaries = [self._summarize_chunk(chunk.text) for chunk in chunks if chunk.text.strip()]
+    ) -> LearningProviderResult:
+        chunk_summaries = [
+            self._summarize_chunk(chunk.text) for chunk in chunks if chunk.text.strip()
+        ]
         detailed_summary = "\n\n".join(chunk_summaries[:5]) or self._fallback_summary(segments)
-        short_summary = self._truncate(chunk_summaries[0] if chunk_summaries else detailed_summary, 280)
+        short_summary = self._truncate(
+            chunk_summaries[0] if chunk_summaries else detailed_summary,
+            280,
+        )
 
         concepts = self._extract_key_concepts(video=video, segments=segments)
         takeaways = self._build_takeaways(chunk_summaries, segments)
@@ -104,14 +121,20 @@ class HeuristicLearningProvider:
         moments = self._build_important_moments(segments)
         notes = self._build_learning_notes(video=video, takeaways=takeaways, concepts=concepts)
 
-        return LearningInsightsDraft(
-            short_summary=short_summary,
-            detailed_summary=detailed_summary,
-            learning_notes=notes,
-            key_concepts=concepts,
-            key_takeaways=takeaways,
-            review_questions=questions,
-            important_moments=moments,
+        return LearningProviderResult(
+            draft=LearningInsightsDraft(
+                short_summary=short_summary,
+                detailed_summary=detailed_summary,
+                learning_notes=notes,
+                key_concepts=concepts,
+                key_takeaways=takeaways,
+                review_questions=questions,
+                important_moments=moments,
+            ),
+            provider="heuristic",
+            model="heuristic",
+            chunk_count=len(chunks),
+            request_count=0,
         )
 
     def _summarize_chunk(self, text: str) -> str:
@@ -131,8 +154,15 @@ class HeuristicLearningProvider:
         video: Video,
         segments: list[TranscriptSegment],
     ) -> list[KeyConceptDraft]:
-        tokens = re.findall(r"[A-Za-z][A-Za-z0-9'-]+", f"{video.title} " + " ".join(segment.text for segment in segments))
-        filtered = [token.lower() for token in tokens if len(token) > 3 and token.lower() not in STOP_WORDS]
+        tokens = re.findall(
+            r"[A-Za-z][A-Za-z0-9'-]+",
+            f"{video.title} " + " ".join(segment.text for segment in segments),
+        )
+        filtered = [
+            token.lower()
+            for token in tokens
+            if len(token) > 3 and token.lower() not in STOP_WORDS
+        ]
         if not filtered:
             return [KeyConceptDraft(concept=video.title, relevance_score=1.0)]
 
@@ -155,7 +185,9 @@ class HeuristicLearningProvider:
     ) -> list[str]:
         candidates = [summary for summary in chunk_summaries if len(summary) > 40]
         if not candidates:
-            candidates = [segment.text.strip() for segment in segments if len(segment.text.strip()) > 50]
+            candidates = [
+                segment.text.strip() for segment in segments if len(segment.text.strip()) > 50
+            ]
 
         unique: list[str] = []
         for candidate in candidates:
@@ -179,7 +211,10 @@ class HeuristicLearningProvider:
             questions.append(
                 ReviewQuestionDraft(
                     question=f"How does {concept.concept} shape the main lesson in {video.title}?",
-                    answer=supporting or f"{concept.concept} appears repeatedly as a central idea in this lesson.",
+                    answer=(
+                        supporting
+                        or f"{concept.concept} appears repeatedly as a central idea in this lesson."
+                    ),
                 )
             )
         return questions
@@ -224,9 +259,15 @@ class HeuristicLearningProvider:
     ) -> str:
         concept_line = ", ".join(concept.concept for concept in concepts[:4]) or video.title
         takeaway_lines = "\n".join(f"- {item}" for item in takeaways[:4])
-        return f"Focus concepts: {concept_line}.\n\nStudy notes:\n{takeaway_lines}".strip()
+        return (
+            f"Focus concepts: {concept_line}.\n\nStudy notes:\n{takeaway_lines}".strip()
+        )
 
-    def _find_supporting_sentence(self, concept: str, segments: list[TranscriptSegment]) -> str | None:
+    def _find_supporting_sentence(
+        self,
+        concept: str,
+        segments: list[TranscriptSegment],
+    ) -> str | None:
         concept_lower = concept.lower()
         for segment in segments:
             text = segment.text.strip()
@@ -242,11 +283,29 @@ class HeuristicLearningProvider:
 
 
 def get_ai_learning_provider(*, prompt_version: str) -> AILearningProvider:
-    return HeuristicLearningProvider(prompt_version=prompt_version)
+    settings = get_settings()
+    provider_name = settings.ai_provider.strip().lower()
+
+    if provider_name == "auto":
+        provider_name = "openrouter" if settings.openrouter_api_key else "heuristic"
+
+    if provider_name == "heuristic":
+        return HeuristicLearningProvider(prompt_version=prompt_version)
+
+    if provider_name == "openrouter":
+        from app.services.openrouter_provider import OpenRouterLearningProvider
+
+        return OpenRouterLearningProvider(prompt_version=prompt_version)
+
+    raise ValueError(f"Unsupported AI provider: {settings.ai_provider}")
 
 
 def _split_sentences(text: str) -> list[str]:
     normalized = re.sub(r"\s+", " ", text).strip()
     if not normalized:
         return []
-    return [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", normalized) if sentence.strip()]
+    return [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", normalized)
+        if sentence.strip()
+    ]

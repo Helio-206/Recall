@@ -28,7 +28,10 @@ class AISummaryJobRepository:
         return self.db.get(AISummaryJob, job_id)
 
     def get_for_user(self, *, job_id: UUID, user_id: UUID) -> AISummaryJob | None:
-        stmt = select(AISummaryJob).where(AISummaryJob.id == job_id, AISummaryJob.user_id == user_id)
+        stmt = select(AISummaryJob).where(
+            AISummaryJob.id == job_id,
+            AISummaryJob.user_id == user_id,
+        )
         return self.db.scalar(stmt)
 
     def latest_for_video(self, *, video_id: UUID, user_id: UUID) -> AISummaryJob | None:

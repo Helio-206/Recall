@@ -54,6 +54,8 @@ class LearningInsightsService:
 
         active_job = self.jobs.active_for_video(video_id=video_id, user_id=user_id)
         if active_job:
+            if active_job.status == PENDING and active_job.attempts == 0 and self._resolved_provider_name() == "heuristic":
+                return AISummaryJobRead.model_validate(self._process_inline_job(active_job))
             return AISummaryJobRead.model_validate(active_job)
 
         summary = self.summaries.get_for_video(video_id)
@@ -83,10 +85,18 @@ class LearningInsightsService:
             summary=AISummaryRead.model_validate(summary) if summary else None,
             key_concepts=[KeyConceptRead.model_validate(item) for item in video.key_concepts],
             key_takeaways=[KeyTakeawayRead.model_validate(item) for item in video.key_takeaways],
-            review_questions=[ReviewQuestionRead.model_validate(item) for item in video.review_questions],
-            important_moments=[ImportantMomentRead.model_validate(item) for item in video.important_moments],
+            review_questions=[
+                ReviewQuestionRead.model_validate(item) for item in video.review_questions
+            ],
+            important_moments=[
+                ImportantMomentRead.model_validate(item) for item in video.important_moments
+            ],
             job=AISummaryJobRead.model_validate(latest_job) if latest_job else None,
-            error_message=latest_job.error_message if latest_job and latest_job.status == FAILED else None,
+            error_message=(
+                latest_job.error_message
+                if latest_job and latest_job.status == FAILED
+                else None
+            ),
         )
 
     def get_job_for_user(self, *, job_id: UUID, user_id: UUID) -> AISummaryJobRead:
@@ -118,10 +128,15 @@ class LearningInsightsService:
                 "video_title": video.title,
                 "prompt_version": self.settings.ai_prompt_version,
                 "provider": self.settings.ai_provider,
+                "model": self.settings.openrouter_model,
             },
         )
         self.db.flush()
         self.db.commit()
+
+        if self._resolved_provider_name() == "heuristic":
+            return self._process_inline_job(job)
+
         try:
             self._queue().enqueue(
                 "app.workers.ai_summary_worker.process_ai_summary_job",
@@ -140,6 +155,22 @@ class LearningInsightsService:
             summary.status = FAILED
             self.db.commit()
         return job
+
+    def _resolved_provider_name(self) -> str:
+        provider_name = self.settings.ai_provider.strip().lower()
+        if provider_name == "auto":
+            return "openrouter" if self.settings.openrouter_api_key else "heuristic"
+        return provider_name
+
+    def _process_inline_job(self, job):
+        try:
+            from app.workers.ai_summary_worker import process_ai_summary_job
+
+            process_ai_summary_job(str(job.id))
+        except Exception:
+            pass
+        refreshed = self.jobs.get(job.id)
+        return refreshed or job
 
     def _queue(self) -> Queue:
         redis = Redis.from_url(self.settings.redis_url)

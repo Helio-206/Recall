@@ -9,6 +9,18 @@ from app.schemas.ai_summary import (
     VideoLearningInsightsRead,
 )
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
+from app.schemas.curriculum import (
+    CurriculumHealthRead,
+    CurriculumManualOverrideUpdate,
+    CurriculumReconstructionJobRead,
+    CurriculumReconstructionRequest,
+    LearningModuleRead,
+    ModuleVideoRead,
+    SpaceCurriculumRead,
+    SuggestedNextVideoRead,
+    VideoCurriculumProfileRead,
+    VideoDependencyRead,
+)
 from app.schemas.ingestion import IngestionAccepted, IngestionJobRead, IngestionRequest
 from app.schemas.search import (
     SearchClickCreate,
@@ -27,19 +39,24 @@ from app.schemas.transcript import (
     VideoTranscriptRead,
 )
 from app.schemas.user import UserRead
-from app.schemas.video_note import VideoNoteRead, VideoNoteUpsert
 from app.schemas.video import VideoCreate, VideoRead, VideoUpdate
+from app.schemas.video_note import VideoNoteRead, VideoNoteUpsert
 
 __all__ = [
     "AISummaryJobCreate",
     "AISummaryJobRead",
     "AISummaryRead",
+    "CurriculumHealthRead",
+    "CurriculumManualOverrideUpdate",
+    "CurriculumReconstructionJobRead",
+    "CurriculumReconstructionRequest",
     "IngestionAccepted",
     "IngestionJobRead",
     "IngestionRequest",
     "ImportantMomentRead",
     "KeyConceptRead",
     "KeyTakeawayRead",
+    "LearningModuleRead",
     "LearningSpaceCreate",
     "LearningSpaceRead",
     "LearningSpaceUpdate",
@@ -53,13 +70,18 @@ __all__ = [
     "SearchResponse",
     "SearchResultRead",
     "SourceRead",
+    "SpaceCurriculumRead",
+    "SuggestedNextVideoRead",
     "TokenResponse",
     "TranscriptJobCreate",
     "TranscriptJobRead",
     "TranscriptSegmentRead",
     "UserRead",
     "VideoCreate",
+    "VideoCurriculumProfileRead",
+    "VideoDependencyRead",
     "VideoLearningInsightsRead",
+    "ModuleVideoRead",
     "VideoNoteRead",
     "VideoNoteUpsert",
     "VideoRead",

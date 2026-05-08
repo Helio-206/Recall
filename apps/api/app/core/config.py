@@ -4,6 +4,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 LOCAL_CORS_ORIGIN_REGEX = (
     r"^https?://"
@@ -14,13 +15,17 @@ LOCAL_CORS_ORIGIN_REGEX = (
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=ENV_FILE,
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_name: str = "Recall API"
     environment: str = "local"
     api_v1_prefix: str = "/api/v1"
 
-    database_url: str = "postgresql+psycopg://recall:recall@localhost:5432/recall"
+    database_url: str = "postgresql+psycopg://recall:recall@localhost:5433/recall"
     redis_url: str = "redis://localhost:6379/0"
 
     ingestion_queue_name: str = "recall-ingestion"
@@ -43,6 +48,7 @@ class Settings(BaseSettings):
 
     backend_cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     backend_cors_origin_regex: str | None = None
+    browser_extension_cors_origin_regex: str | None = r"^chrome-extension://[a-p]{32}$"
     local_storage_path: Path = Path("./storage")
 
     ai_provider: str = "heuristic"
@@ -52,6 +58,26 @@ class Settings(BaseSettings):
     ai_job_timeout_seconds: int = 60 * 8
     ai_chunk_target_chars: int = 1800
     ai_chunk_overlap_segments: int = 1
+    ai_request_timeout_seconds: float = 45.0
+    ai_request_retries: int = 2
+    ai_rate_limit_per_minute: int = 20
+    openrouter_api_key: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model: str = "openai/gpt-oss-120b:free"
+    openrouter_fallback_models: str = ""
+    openrouter_app_name: str = "Recall"
+    openrouter_site_url: str | None = None
+    curriculum_provider: str = "heuristic"
+    curriculum_prompt_version: str = "phase6-v1"
+    curriculum_queue_name: str = "curriculum-reconstruction"
+    curriculum_retry_attempts: int = 1
+    curriculum_job_timeout_seconds: int = 60 * 10
+    curriculum_batch_size: int = 6
+    extension_save_rate_limit_count: int = 15
+    extension_save_rate_limit_window_minutes: int = 5
+    extension_recent_saves_limit: int = 8
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str | None = None
 
     search_enabled: bool = True
     search_backend: str = "meilisearch"
@@ -68,11 +94,20 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_regex(self) -> str | None:
-        if self.backend_cors_origin_regex:
-            return self.backend_cors_origin_regex
+        patterns = [pattern for pattern in [self.backend_cors_origin_regex] if pattern]
         if self.environment == "local":
-            return LOCAL_CORS_ORIGIN_REGEX
-        return None
+            patterns.append(LOCAL_CORS_ORIGIN_REGEX)
+        if self.browser_extension_cors_origin_regex:
+            patterns.append(self.browser_extension_cors_origin_regex)
+        return "|".join(patterns) if patterns else None
+
+    @property
+    def openrouter_fallback_model_list(self) -> list[str]:
+        return [
+            model.strip()
+            for model in self.openrouter_fallback_models.split(",")
+            if model.strip()
+        ]
 
 
 @lru_cache

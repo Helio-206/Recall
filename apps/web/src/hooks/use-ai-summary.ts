@@ -23,7 +23,7 @@ const phaseMessages: Record<string, string> = {
   failed: "AI analysis failed. Try again.",
 };
 
-const queuedJobTimeoutMs = 120_000;
+const queuedJobTimeoutMs = 30_000;
 
 export function useAISummary({ token, videoId }: UseAISummaryOptions) {
   const [insights, setInsights] = useState<VideoLearningInsights | null>(null);
@@ -76,6 +76,12 @@ export function useAISummary({ token, videoId }: UseAISummaryOptions) {
       setState("processing");
       try {
         const nextJob = await createAISummaryJob(token, videoId, { force });
+        if (nextJob.status === "completed") {
+          pollingJobId.current = null;
+          setJob(nextJob);
+          await refresh();
+          return;
+        }
         pollingJobId.current = nextJob.id;
         setJob(nextJob);
       } catch (requestError) {

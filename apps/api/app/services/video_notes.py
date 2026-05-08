@@ -22,7 +22,13 @@ class VideoNoteService:
         note = self.notes.get_for_video(video_id=video_id, user_id=user_id)
         return VideoNoteRead.model_validate(note) if note else None
 
-    def upsert_for_video(self, *, video_id: UUID, user_id: UUID, payload: VideoNoteUpsert) -> VideoNoteRead | None:
+    def upsert_for_video(
+        self,
+        *,
+        video_id: UUID,
+        user_id: UUID,
+        payload: VideoNoteUpsert,
+    ) -> VideoNoteRead | None:
         video = self._get_video(video_id=video_id, user_id=user_id)
         note = self.notes.get_for_video(video_id=video_id, user_id=user_id)
 

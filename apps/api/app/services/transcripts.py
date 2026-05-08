@@ -20,6 +20,8 @@ from app.schemas.transcript import (
     TranscriptSegmentRead,
     VideoTranscriptRead,
 )
+from app.services.caption_extractor import CaptionExtractionError, YouTubeCaptionExtractor
+from app.services.search_indexing import sync_video_search_documents
 
 
 class TranscriptService:
@@ -41,6 +43,15 @@ class TranscriptService:
 
         active_job = self.jobs.active_for_video(video_id=video_id, user_id=user_id)
         if active_job:
+            if active_job.status == PENDING and active_job.attempts == 0:
+                fast_job = self._try_complete_with_captions(
+                    video=video,
+                    user_id=user_id,
+                    existing_job=active_job,
+                )
+                if fast_job:
+                    self.db.refresh(fast_job)
+                    return TranscriptJobRead.model_validate(fast_job)
             return TranscriptJobRead.model_validate(active_job)
 
         existing_segments = self.segments.list_for_video(video_id)
@@ -52,6 +63,11 @@ class TranscriptService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="This video already has a transcript.",
             )
+
+        fast_job = self._try_complete_with_captions(video=video, user_id=user_id)
+        if fast_job:
+            self.db.refresh(fast_job)
+            return TranscriptJobRead.model_validate(fast_job)
 
         job = self._create_and_enqueue(video=video, user_id=user_id, phase="queued")
         self.db.commit()
@@ -118,6 +134,68 @@ class TranscriptService:
             )
             video.transcript_status = FAILED
             self.db.commit()
+        return job
+
+    def _try_complete_with_captions(
+        self,
+        *,
+        video: Video,
+        user_id: UUID,
+        existing_job: TranscriptJob | None = None,
+    ) -> TranscriptJob | None:
+        if not self.settings.transcript_prefer_youtube_captions:
+            return None
+
+        try:
+            captions = YouTubeCaptionExtractor().extract(video_url=video.url)
+        except CaptionExtractionError:
+            return None
+
+        if not captions:
+            return None
+
+        started_at = datetime.now(UTC)
+        video.transcript_status = PROCESSING
+        video.processing_status = PROCESSING
+        if existing_job:
+            job = existing_job
+            job.payload = merge_payload(
+                job.payload,
+                phase="fetching_captions",
+                video_url=video.url,
+                segments_count=len(captions.segments),
+                method=captions.source,
+                language=captions.language,
+                model="youtube-captions",
+            )
+        else:
+            job = self.jobs.create(
+                user_id=user_id,
+                video_id=video.id,
+                payload={
+                    "phase": "fetching_captions",
+                    "video_url": video.url,
+                    "segments_count": len(captions.segments),
+                    "method": captions.source,
+                    "language": captions.language,
+                    "model": "youtube-captions",
+                },
+            )
+        self.jobs.mark_processing(job, started_at=started_at)
+        job.payload = merge_payload(job.payload, phase="structuring_transcript")
+        self.segments.replace_for_video(video_id=video.id, segments=captions.segments)
+        video.transcript_status = COMPLETED
+        video.processing_status = COMPLETED
+        self.jobs.set_status(
+            job,
+            status=COMPLETED,
+            payload=merge_payload(job.payload, phase="completed"),
+            error_message=None,
+            finished_at=datetime.now(UTC),
+        )
+        self.db.commit()
+        sync_video_search_documents(self.db, video_id=video.id)
+        self.db.commit()
         return job
 
     def _queue(self) -> Queue:

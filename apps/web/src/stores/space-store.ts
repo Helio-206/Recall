@@ -1,6 +1,13 @@
 "use client";
 
-import type { RecallSpace, RecallVideo } from "@recall/shared";
+import type {
+  CurriculumManualOverrideUpdate,
+  CurriculumReconstructionJob,
+  CurriculumReconstructionRequest,
+  RecallSpace,
+  RecallVideo,
+  SpaceCurriculum,
+} from "@recall/shared";
 import { create } from "zustand";
 
 import { apiFetch } from "@/lib/api";
@@ -16,24 +23,45 @@ type VideoPayload = {
   title?: string;
 };
 
-type SpaceState = {
+type CurriculumState = {
+  selectedCurriculum: SpaceCurriculum | null;
+  isCurriculumLoading: boolean;
+  curriculumError: string | null;
+};
+
+type SpaceState = CurriculumState & {
   spaces: RecallSpace[];
   selectedSpace: RecallSpace | null;
   isLoading: boolean;
   error: string | null;
   fetchSpaces: (token: string) => Promise<void>;
   fetchSpace: (token: string, id: string) => Promise<void>;
+  fetchCurriculum: (token: string, id: string) => Promise<void>;
   createSpace: (token: string, payload: SpacePayload) => Promise<RecallSpace>;
   addVideo: (token: string, spaceId: string, payload: VideoPayload) => Promise<RecallVideo>;
   updateVideo: (token: string, videoId: string, payload: Partial<RecallVideo>) => Promise<RecallVideo>;
+  rebuildCurriculum: (
+    token: string,
+    spaceId: string,
+    payload?: CurriculumReconstructionRequest,
+  ) => Promise<CurriculumReconstructionJob>;
+  updateCurriculumOverride: (
+    token: string,
+    spaceId: string,
+    videoId: string,
+    payload: CurriculumManualOverrideUpdate,
+  ) => Promise<SpaceCurriculum>;
   clearSelected: () => void;
 };
 
 export const useSpaceStore = create<SpaceState>((set, get) => ({
   spaces: [],
   selectedSpace: null,
+  selectedCurriculum: null,
   isLoading: false,
+  isCurriculumLoading: false,
   error: null,
+  curriculumError: null,
 
   fetchSpaces: async (token) => {
     set({ isLoading: true, error: null });
@@ -52,6 +80,21 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
       set({ selectedSpace, isLoading: false });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "Unable to load this space.", isLoading: false });
+    }
+  },
+
+  fetchCurriculum: async (token, id) => {
+    set({ isCurriculumLoading: true, curriculumError: null });
+    try {
+      const selectedCurriculum = await apiFetch<SpaceCurriculum>(`/spaces/${id}/curriculum`, {
+        token,
+      });
+      set({ selectedCurriculum, isCurriculumLoading: false });
+    } catch (error) {
+      set({
+        curriculumError: error instanceof Error ? error.message : "Unable to load the curriculum.",
+        isCurriculumLoading: false,
+      });
     }
   },
 
@@ -85,6 +128,9 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
           progress,
         },
       });
+    }
+    if (get().selectedCurriculum?.space_id === spaceId) {
+      set({ selectedCurriculum: null });
     }
     set({
       spaces: get().spaces.map((space) => {
@@ -124,6 +170,9 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
         },
       });
     }
+    if (get().selectedCurriculum?.space_id === video.space_id) {
+      set({ selectedCurriculum: null });
+    }
     set({
       spaces: get().spaces.map((space) => {
         if (space.id !== video.space_id || selectedSpace?.id !== video.space_id) {
@@ -139,5 +188,36 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
     return video;
   },
 
-  clearSelected: () => set({ selectedSpace: null }),
+  rebuildCurriculum: async (token, spaceId, payload = {}) => {
+    const job = await apiFetch<CurriculumReconstructionJob>(`/spaces/${spaceId}/curriculum/rebuild`, {
+      token,
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const current = get().selectedCurriculum;
+    if (current?.space_id === spaceId) {
+      set({
+        selectedCurriculum: {
+          ...current,
+          latest_job: job,
+        },
+      });
+    }
+    return job;
+  },
+
+  updateCurriculumOverride: async (token, spaceId, videoId, payload) => {
+    const selectedCurriculum = await apiFetch<SpaceCurriculum>(
+      `/spaces/${spaceId}/curriculum/videos/${videoId}/override`,
+      {
+        token,
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      },
+    );
+    set({ selectedCurriculum, curriculumError: null });
+    return selectedCurriculum;
+  },
+
+  clearSelected: () => set({ selectedSpace: null, selectedCurriculum: null }),
 }));

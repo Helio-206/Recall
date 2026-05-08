@@ -23,7 +23,7 @@ class TemporaryAudioExtractor:
         output_dir.mkdir(parents=True, exist_ok=True)
         settings = get_settings()
         ydl_options = {
-            "format": "bestaudio/best",
+            "format": "bestaudio[abr<=64]/bestaudio/best",
             "outtmpl": str(output_dir / "source.%(ext)s"),
             "noplaylist": True,
             "quiet": True,
@@ -37,10 +37,11 @@ class TemporaryAudioExtractor:
             "postprocessors": [
                 {
                     "key": "FFmpegExtractAudio",
-                    "preferredcodec": "wav",
-                    "preferredquality": "64",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "32",
                 }
             ],
+            "postprocessor_args": ["-ac", "1", "-ar", "16000"],
         }
 
         try:
@@ -51,10 +52,14 @@ class TemporaryAudioExtractor:
         except Exception as exc:
             raise AudioExtractionError("Audio preparation failed.") from exc
 
-        wav_files = sorted(output_dir.glob("*.wav"))
-        if not wav_files:
+        audio_files = sorted(
+            path
+            for extension in ("*.mp3", "*.m4a", "*.aac", "*.opus", "*.wav")
+            for path in output_dir.glob(extension)
+        )
+        if not audio_files:
             raise AudioExtractionError("FFmpeg did not produce a transcript-ready audio file.")
-        return wav_files[0]
+        return audio_files[0]
 
 
 def resolve_ffmpeg_path() -> str | None:

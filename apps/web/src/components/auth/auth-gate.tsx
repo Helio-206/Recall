@@ -1,43 +1,78 @@
 "use client";
 
+import { useRef } from "react";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import type { RecallUser } from "@recall/shared";
 import { apiFetch } from "@/lib/api";
-import { useAuthStore } from "@/stores/auth-store";
+import { getTokenFromCookie, useAuthStore } from "@/stores/auth-store";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { token, user, hasHydrated, setUser, logout } = useAuthStore();
+  const { token, user, hasHydrated, setToken, setUser, logout } = useAuthStore();
   const [isChecking, setIsChecking] = useState(true);
+  const [hydrationTimedOut, setHydrationTimedOut] = useState(false);
+  const validatedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!hasHydrated) return;
+    if (hasHydrated) {
+      setHydrationTimedOut(false);
+      return;
+    }
 
-    if (!token) {
+    const timeoutId = window.setTimeout(() => {
+      setHydrationTimedOut(true);
+    }, 1500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [hasHydrated]);
+
+  useEffect(() => {
+    if (!hasHydrated && !hydrationTimedOut) return;
+
+    const cookieToken = getTokenFromCookie();
+    const activeToken = token ?? cookieToken;
+
+    if (!activeToken) {
+      validatedTokenRef.current = null;
+      setIsChecking(false);
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
 
-    if (user) {
+    if (!token && cookieToken) {
+      setToken(cookieToken);
+    }
+
+    if (user && validatedTokenRef.current === activeToken) {
       setIsChecking(false);
       return;
     }
 
-    apiFetch<RecallUser>("/auth/me", { token })
+    setIsChecking(true);
+
+    apiFetch<RecallUser>("/auth/me", { token: activeToken })
       .then((me) => {
+        if (!token && cookieToken) {
+          setToken(cookieToken);
+        }
+        validatedTokenRef.current = activeToken;
         setUser(me);
         setIsChecking(false);
       })
       .catch(() => {
+        validatedTokenRef.current = null;
         logout();
-        router.replace("/login");
+        setIsChecking(false);
+        router.replace(`/login?next=${encodeURIComponent(pathname)}`);
       });
-  }, [hasHydrated, logout, pathname, router, setUser, token, user]);
+  }, [hasHydrated, hydrationTimedOut, logout, pathname, router, setToken, setUser, token, user]);
 
-  if (!hasHydrated || isChecking) {
+  if ((!hasHydrated && !hydrationTimedOut) || isChecking) {
     return (
       <div className="grid min-h-screen place-items-center bg-background text-muted">
         <div className="h-6 w-40 overflow-hidden rounded-full bg-white/[0.06]">

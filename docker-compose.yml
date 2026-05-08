@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-recall}
       POSTGRES_DB: ${POSTGRES_DB:-recall}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -73,6 +73,30 @@ services:
       WHISPER_MODEL_NAME: ${WHISPER_MODEL_NAME:-base}
       WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-}
       WHISPER_FP16: ${WHISPER_FP16:-false}
+      AI_PROVIDER: ${AI_PROVIDER:-auto}
+      AI_PROMPT_VERSION: ${AI_PROMPT_VERSION:-phase4-v1}
+      AI_QUEUE_NAME: ${AI_QUEUE_NAME:-ai-summary}
+      AI_RETRY_ATTEMPTS: ${AI_RETRY_ATTEMPTS:-2}
+      AI_JOB_TIMEOUT_SECONDS: ${AI_JOB_TIMEOUT_SECONDS:-480}
+      AI_CHUNK_TARGET_CHARS: ${AI_CHUNK_TARGET_CHARS:-1800}
+      AI_CHUNK_OVERLAP_SEGMENTS: ${AI_CHUNK_OVERLAP_SEGMENTS:-1}
+      AI_REQUEST_TIMEOUT_SECONDS: ${AI_REQUEST_TIMEOUT_SECONDS:-45}
+      AI_REQUEST_RETRIES: ${AI_REQUEST_RETRIES:-2}
+      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-20}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-oss-120b:free}
+      OPENROUTER_FALLBACK_MODELS: ${OPENROUTER_FALLBACK_MODELS:-}
+      OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-Recall}
+      OPENROUTER_SITE_URL: ${OPENROUTER_SITE_URL:-http://localhost:3000}
+      CURRICULUM_PROVIDER: ${CURRICULUM_PROVIDER:-auto}
+      CURRICULUM_PROMPT_VERSION: ${CURRICULUM_PROMPT_VERSION:-phase6-v1}
+      CURRICULUM_QUEUE_NAME: ${CURRICULUM_QUEUE_NAME:-curriculum-reconstruction}
+      CURRICULUM_RETRY_ATTEMPTS: ${CURRICULUM_RETRY_ATTEMPTS:-1}
+      CURRICULUM_JOB_TIMEOUT_SECONDS: ${CURRICULUM_JOB_TIMEOUT_SECONDS:-600}
+      CURRICULUM_BATCH_SIZE: ${CURRICULUM_BATCH_SIZE:-6}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
       SEARCH_ENABLED: ${SEARCH_ENABLED:-true}
       SEARCH_BACKEND: ${SEARCH_BACKEND:-meilisearch}
       SEARCH_URL: ${SEARCH_URL:-http://meilisearch:7700}
@@ -120,6 +144,107 @@ services:
       WHISPER_MODEL_NAME: ${WHISPER_MODEL_NAME:-base}
       WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-}
       WHISPER_FP16: ${WHISPER_FP16:-false}
+      SEARCH_ENABLED: ${SEARCH_ENABLED:-true}
+      SEARCH_BACKEND: ${SEARCH_BACKEND:-meilisearch}
+      SEARCH_URL: ${SEARCH_URL:-http://meilisearch:7700}
+      SEARCH_API_KEY: ${SEARCH_API_KEY:-}
+      SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+
+  ai-worker:
+    build:
+      context: ./apps/api
+    container_name: recall-ai-worker
+    restart: unless-stopped
+    command:
+      [
+        "rq",
+        "worker",
+        "${AI_QUEUE_NAME:-ai-summary}",
+        "--url",
+        "${REDIS_URL:-redis://redis:6379/0}",
+      ]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      AI_PROVIDER: ${AI_PROVIDER:-auto}
+      AI_PROMPT_VERSION: ${AI_PROMPT_VERSION:-phase4-v1}
+      AI_QUEUE_NAME: ${AI_QUEUE_NAME:-ai-summary}
+      AI_RETRY_ATTEMPTS: ${AI_RETRY_ATTEMPTS:-2}
+      AI_JOB_TIMEOUT_SECONDS: ${AI_JOB_TIMEOUT_SECONDS:-480}
+      AI_CHUNK_TARGET_CHARS: ${AI_CHUNK_TARGET_CHARS:-1800}
+      AI_CHUNK_OVERLAP_SEGMENTS: ${AI_CHUNK_OVERLAP_SEGMENTS:-1}
+      AI_REQUEST_TIMEOUT_SECONDS: ${AI_REQUEST_TIMEOUT_SECONDS:-45}
+      AI_REQUEST_RETRIES: ${AI_REQUEST_RETRIES:-2}
+      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-20}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-oss-120b:free}
+      OPENROUTER_FALLBACK_MODELS: ${OPENROUTER_FALLBACK_MODELS:-}
+      OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-Recall}
+      OPENROUTER_SITE_URL: ${OPENROUTER_SITE_URL:-http://localhost:3000}
+      CURRICULUM_PROVIDER: ${CURRICULUM_PROVIDER:-auto}
+      CURRICULUM_PROMPT_VERSION: ${CURRICULUM_PROMPT_VERSION:-phase6-v1}
+      CURRICULUM_QUEUE_NAME: ${CURRICULUM_QUEUE_NAME:-curriculum-reconstruction}
+      CURRICULUM_RETRY_ATTEMPTS: ${CURRICULUM_RETRY_ATTEMPTS:-1}
+      CURRICULUM_JOB_TIMEOUT_SECONDS: ${CURRICULUM_JOB_TIMEOUT_SECONDS:-600}
+      CURRICULUM_BATCH_SIZE: ${CURRICULUM_BATCH_SIZE:-6}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+      SEARCH_ENABLED: ${SEARCH_ENABLED:-true}
+      SEARCH_BACKEND: ${SEARCH_BACKEND:-meilisearch}
+      SEARCH_URL: ${SEARCH_URL:-http://meilisearch:7700}
+      SEARCH_API_KEY: ${SEARCH_API_KEY:-}
+      SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+
+  curriculum-worker:
+    build:
+      context: ./apps/api
+    container_name: recall-curriculum-worker
+    restart: unless-stopped
+    command:
+      [
+        "rq",
+        "worker",
+        "${CURRICULUM_QUEUE_NAME:-curriculum-reconstruction}",
+        "--url",
+        "${REDIS_URL:-redis://redis:6379/0}",
+      ]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      AI_REQUEST_TIMEOUT_SECONDS: ${AI_REQUEST_TIMEOUT_SECONDS:-45}
+      AI_RATE_LIMIT_PER_MINUTE: ${AI_RATE_LIMIT_PER_MINUTE:-20}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-oss-120b:free}
+      OPENROUTER_APP_NAME: ${OPENROUTER_APP_NAME:-Recall}
+      OPENROUTER_SITE_URL: ${OPENROUTER_SITE_URL:-http://localhost:3000}
+      CURRICULUM_PROVIDER: ${CURRICULUM_PROVIDER:-auto}
+      CURRICULUM_PROMPT_VERSION: ${CURRICULUM_PROMPT_VERSION:-phase6-v1}
+      CURRICULUM_QUEUE_NAME: ${CURRICULUM_QUEUE_NAME:-curriculum-reconstruction}
+      CURRICULUM_RETRY_ATTEMPTS: ${CURRICULUM_RETRY_ATTEMPTS:-1}
+      CURRICULUM_JOB_TIMEOUT_SECONDS: ${CURRICULUM_JOB_TIMEOUT_SECONDS:-600}
+      CURRICULUM_BATCH_SIZE: ${CURRICULUM_BATCH_SIZE:-6}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
       SEARCH_ENABLED: ${SEARCH_ENABLED:-true}
       SEARCH_BACKEND: ${SEARCH_BACKEND:-meilisearch}
       SEARCH_URL: ${SEARCH_URL:-http://meilisearch:7700}

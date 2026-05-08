@@ -77,12 +77,18 @@ class SearchService:
         )
 
     def list_recent_queries(self, *, user_id: UUID) -> list[SearchQueryRead]:
-        return [SearchQueryRead.model_validate(item) for item in self.history.list_recent(user_id=user_id)]
+        return [
+            SearchQueryRead.model_validate(item)
+            for item in self.history.list_recent(user_id=user_id)
+        ]
 
     def save_recent_query(self, *, user_id: UUID, payload: SearchQueryCreate) -> SearchQueryRead:
         query_text = payload.query.strip()
         if not query_text:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Query is required.")
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Query is required.",
+            )
         record = self.history.touch(user_id=user_id, query=query_text)
         self.db.commit()
         self.db.refresh(record)
@@ -116,11 +122,17 @@ class SearchService:
             id=str(hit.get("id")),
             kind=str(hit.get("kind") or "all"),
             video_id=UUID(str(hit.get("video_id"))),
-            video_title=str(formatted.get("video_title") or hit.get("video_title") or "Untitled video"),
+            video_title=str(
+                formatted.get("video_title") or hit.get("video_title") or "Untitled video"
+            ),
             space_id=UUID(str(hit.get("space_id"))),
-            space_title=str(formatted.get("space_title") or hit.get("space_title") or "Learning space"),
+            space_title=str(
+                formatted.get("space_title") or hit.get("space_title") or "Learning space"
+            ),
             timestamp=float(hit.get("timestamp") or 0),
-            title=str(formatted.get("title") or hit.get("title") or hit.get("video_title") or "Match"),
+            title=str(
+                formatted.get("title") or hit.get("title") or hit.get("video_title") or "Match"
+            ),
             excerpt=excerpt,
             highlighted_excerpt=highlighted_excerpt,
             target_tab=str(hit.get("target_tab") or "transcript"),

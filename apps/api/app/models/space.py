@@ -10,9 +10,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from app.models.curriculum_reconstruction_job import CurriculumReconstructionJob
+    from app.models.learning_module import LearningModule
     from app.models.source import Source
     from app.models.user import User
     from app.models.video import Video
+    from app.models.video_curriculum_profile import VideoCurriculumProfile
+    from app.models.video_dependency import VideoDependency
 
 
 class LearningSpace(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -42,4 +46,26 @@ class LearningSpace(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
         order_by="Video.order_index",
+    )
+    learning_modules: Mapped[list[LearningModule]] = relationship(
+        back_populates="space",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="LearningModule.order_index",
+    )
+    curriculum_profiles: Mapped[list[VideoCurriculumProfile]] = relationship(
+        back_populates="space",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    video_dependencies: Mapped[list[VideoDependency]] = relationship(
+        back_populates="space",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    curriculum_jobs: Mapped[list[CurriculumReconstructionJob]] = relationship(
+        back_populates="space",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="desc(CurriculumReconstructionJob.created_at)",
     )

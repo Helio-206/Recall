@@ -49,12 +49,6 @@ class IngestionService:
                 detail=str(exc),
             ) from exc
 
-        if source_type == "channel":
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Channel ingestion is not available yet.",
-            )
-
         queue = self._queue()
         self._ensure_worker_available(queue)
 

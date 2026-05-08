@@ -8,13 +8,27 @@ type AuthState = {
   token: string | null;
   user: RecallUser | null;
   hasHydrated: boolean;
+  setToken: (token: string | null) => void;
   setSession: (session: AuthSession) => void;
   setUser: (user: RecallUser) => void;
   logout: () => void;
   setHasHydrated: (hasHydrated: boolean) => void;
 };
 
-const tokenCookie = "recall_token";
+export const tokenCookie = "recall_token";
+
+export function getTokenFromCookie(): string | null {
+  if (typeof document === "undefined") return null;
+
+  const cookie = document.cookie
+    .split("; ")
+    .find((entry) => entry.startsWith(`${tokenCookie}=`));
+
+  if (!cookie) return null;
+
+  const [, value = ""] = cookie.split("=");
+  return value ? decodeURIComponent(value) : null;
+}
 
 function writeTokenCookie(token: string) {
   if (typeof document === "undefined") return;
@@ -34,6 +48,18 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
       hasHydrated: false,
+      setToken: (token) => {
+        if (token) {
+          writeTokenCookie(token);
+        } else {
+          clearTokenCookie();
+        }
+
+        set((state) => ({
+          token,
+          user: token ? state.user : null,
+        }));
+      },
       setSession: (session) => {
         writeTokenCookie(session.access_token);
         set({ token: session.access_token, user: session.user });

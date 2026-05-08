@@ -25,7 +25,7 @@ const phaseMessages: Record<string, string> = {
   failed: "Transcript generation failed. Try again.",
 };
 
-const queuedJobTimeoutMs = 120_000;
+const queuedJobTimeoutMs = 30_000;
 
 export function useTranscript({ token, videoId, onCompleted }: UseTranscriptOptions) {
   const [transcript, setTranscript] = useState<VideoTranscript | null>(null);
@@ -77,6 +77,13 @@ export function useTranscript({ token, videoId, onCompleted }: UseTranscriptOpti
       setState("processing");
       try {
         const nextJob = await createTranscriptJob(token, videoId, { force });
+        if (nextJob.status === "completed") {
+          pollingJobId.current = null;
+          setJob(nextJob);
+          await refresh();
+          await onCompleted?.();
+          return;
+        }
         pollingJobId.current = nextJob.id;
         setJob(nextJob);
       } catch (requestError) {

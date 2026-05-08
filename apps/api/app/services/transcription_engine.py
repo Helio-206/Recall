@@ -1,4 +1,6 @@
 import os
+from functools import lru_cache
+from importlib.util import find_spec
 from pathlib import Path
 from shutil import copy2
 
@@ -13,17 +15,16 @@ class TranscriptionError(Exception):
 
 class WhisperTranscriber:
     def transcribe(self, audio_path: Path) -> list[TranscriptSegmentDraft]:
-        try:
-            import whisper
-        except ImportError as exc:
-            raise TranscriptionError("Whisper is not installed in the transcript worker.") from exc
+        if find_spec("whisper") is None:
+            raise TranscriptionError("Whisper is not installed in the transcript worker.")
 
         settings = get_settings()
         try:
             _ensure_ffmpeg_on_path()
-            model = whisper.load_model(settings.whisper_model_name)
+            model = _get_whisper_model(settings.whisper_model_name)
             options = {
                 "fp16": settings.whisper_fp16,
+                "task": "transcribe",
                 "verbose": None,
             }
             if settings.whisper_language:
@@ -102,3 +103,10 @@ def _path_directory_with_ffmpeg_alias(ffmpeg_path: Path) -> Path:
         alias_path.chmod(0o755)
 
     return alias_dir
+
+
+@lru_cache(maxsize=2)
+def _get_whisper_model(model_name: str):
+    import whisper
+
+    return whisper.load_model(model_name)

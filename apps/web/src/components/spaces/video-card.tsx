@@ -21,6 +21,7 @@ type VideoCardProps = {
   onSelect?: (video: RecallVideo) => void;
   isUpdating?: boolean;
   isActive?: boolean;
+  sequenceLabel?: string;
 };
 
 export function VideoCard({
@@ -29,6 +30,7 @@ export function VideoCard({
   onSelect,
   isUpdating = false,
   isActive = false,
+  sequenceLabel,
 }: VideoCardProps) {
   return (
     <article
@@ -64,7 +66,7 @@ export function VideoCard({
       >
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs text-muted">
-            {String(video.order_index + 1).padStart(2, "0")}
+            {sequenceLabel ?? String(video.order_index + 1).padStart(2, "0")}
           </span>
           <h3 className="truncate text-sm font-medium text-foreground">{video.title}</h3>
         </div>

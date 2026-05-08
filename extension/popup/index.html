@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recall Capture</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Recall Capture</p>
+          <h1>Save the current lesson before it disappears.</h1>
+        </div>
+        <a id="dashboardLink" class="ghost-link" href="#" target="_blank" rel="noreferrer">
+          Open dashboard
+        </a>
+      </section>
+
+      <section id="statusBanner" class="status-banner status-idle">
+        <span id="statusLabel">Ready to save</span>
+      </section>
+
+      <section id="authView" class="panel auth-view" hidden>
+        <div class="panel-copy">
+          <h2>Sign in to Recall</h2>
+          <p>Use your existing Recall account. The extension stores only your bearer token in Chrome local storage.</p>
+        </div>
+        <form id="loginForm" class="stacked-form">
+          <label>
+            <span>Email</span>
+            <input id="emailInput" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            <span>Password</span>
+            <input id="passwordInput" type="password" autocomplete="current-password" required />
+          </label>
+          <button id="loginButton" class="primary-button" type="submit">Sign in</button>
+        </form>
+      </section>
+
+      <section id="appView" class="stack" hidden>
+        <section class="panel page-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-label">Current page</p>
+              <h2 id="pageTitle">Detecting current tab…</h2>
+            </div>
+            <span id="pageBadge" class="badge">Checking</span>
+          </div>
+          <p id="pageReason" class="muted-copy">Inspecting the current tab.</p>
+          <div class="url-preview">
+            <span class="url-label">Selected URL</span>
+            <p id="pageUrl">Waiting for tab access…</p>
+          </div>
+        </section>
+
+        <section class="panel save-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-label">Destination</p>
+              <h2>Learning Space</h2>
+            </div>
+            <button id="logoutButton" class="text-button" type="button">Sign out</button>
+          </div>
+          <label class="select-label" for="spaceSelect">
+            <span>Choose a space</span>
+            <select id="spaceSelect"></select>
+          </label>
+          <button id="saveButton" class="primary-button" type="button">Save current URL</button>
+        </section>
+
+        <section class="panel recent-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-label">Recent saves</p>
+              <h2>Latest capture activity</h2>
+            </div>
+          </div>
+          <div id="recentSaves" class="recent-saves"></div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>

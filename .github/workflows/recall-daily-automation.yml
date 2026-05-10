@@ -1,0 +1,33 @@
+name: Recall Daily Automation
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  daily-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run daily Recall update
+        run: node scripts/recall-daily-update.js
+
+      - name: Commit daily snapshot
+        run: |
+          git config user.name "recall-bot"
+          git config user.email "recall-bot@users.noreply.github.com"
+          git add data/recall-daily-snapshot.json docs/automation-log.md
+          git commit --allow-empty -m "chore(recall): update daily project snapshot" -m "Revisão diraria feita"
+          git push

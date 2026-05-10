@@ -1,0 +1,14 @@
+{
+  "updatedAt": "2026-05-10T00:45:37.963Z",
+  "projectName": "Recall",
+  "module": "Learning OS",
+  "dailyRunId": "recall-20260510T004537963Z",
+  "checkedItems": [
+    "API and web workspaces accessible",
+    "Daily snapshot generated",
+    "Automation log updated"
+  ],
+  "roadmapStatus": "Core ingestion, transcript, AI learning and search phases are mapped and versioned.",
+  "ingestionStatus": "Ingestion pipeline migrations and models are present; monitor new source processing health daily.",
+  "learningSpacesStatus": "Learning space entities and curriculum reconstruction flow are available for iterative improvements."
+}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowRight, Loader2, Plus, Sparkles } from "lucide-react";
+import { ArrowRight, Loader2, Plus, RefreshCw } from "lucide-react";
 
 import type { LearningModule, RecallVideo, SpaceCurriculum } from "@recall/shared";
 import { LearningIntelligencePanel } from "@/components/ai/learning-intelligence-panel";
@@ -147,6 +147,20 @@ export default function SpaceDetailPage() {
     }
   }
 
+  async function onSetVideoOrder(videoId: string, moduleTitle: string, orderIndex: number) {
+    if (!token || !params.id) return;
+    setOverrideVideoId(videoId);
+    try {
+      await updateCurriculumOverride(token, params.id, videoId, {
+        module_title: moduleTitle,
+        order_index: Math.max(0, orderIndex),
+        locked: true,
+      });
+    } finally {
+      setOverrideVideoId(null);
+    }
+  }
+
   async function onResetVideo(videoId: string) {
     if (!token || !params.id || !selectedCurriculum) return;
     setOverrideVideoId(videoId);
@@ -224,7 +238,7 @@ export default function SpaceDetailPage() {
               onClick={onRebuildCurriculum}
               disabled={isRebuildingCurriculum}
             >
-              {isRebuildingCurriculum ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              {isRebuildingCurriculum ? <Loader2 className="animate-spin" /> : <RefreshCw />}
               Rebuild Curriculum
             </Button>
             <AddVideoDialog
@@ -247,7 +261,7 @@ export default function SpaceDetailPage() {
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[420px_1fr] 2xl:grid-cols-[500px_1fr]">
         <CurriculumSidebar
           modules={modules}
           activeVideoId={activeVideo?.id ?? null}
@@ -261,6 +275,7 @@ export default function SpaceDetailPage() {
           onSelectVideo={setActiveVideoId}
           onRebuild={onRebuildCurriculum}
           onMoveVideo={onMoveVideo}
+          onSetVideoOrder={onSetVideoOrder}
           onResetVideo={onResetVideo}
         />
 
@@ -310,6 +325,7 @@ export default function SpaceDetailPage() {
                 <LearningIntelligencePanel
                   video={activeVideo}
                   insights={aiSummary.insights}
+                  job={aiSummary.job}
                   state={aiSummary.state}
                   error={aiSummary.error}
                   message={aiSummary.message}

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-
-import { LandingPage } from "@/components/marketing/landing-page";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Recall | Your second brain for online learning",
-  description:
-    "Recall turns scattered internet videos into organized notes, transcripts, summaries, and structured learning paths.",
+  title: "Recall",
+  description: "Developer-first learning workspace.",
 };
 
-export default function HomePage() {
-  return <LandingPage />;
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const hasToken = cookieStore.get("recall_token")?.value;
+  redirect(hasToken ? "/dashboard" : "/login");
 }

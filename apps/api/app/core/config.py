@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(default="change-me-before-production", min_length=16)
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60 * 24 * 7
+    google_oauth_client_ids: str = ""
 
     backend_cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     backend_cors_origin_regex: str | None = None
@@ -107,6 +108,14 @@ class Settings(BaseSettings):
             model.strip()
             for model in self.openrouter_fallback_models.split(",")
             if model.strip()
+        ]
+
+    @property
+    def google_oauth_client_id_list(self) -> list[str]:
+        return [
+            client_id.strip()
+            for client_id in self.google_oauth_client_ids.split(",")
+            if client_id.strip()
         ]
 
 

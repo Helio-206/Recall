@@ -16,6 +16,7 @@ const phaseMessages: Record<string, string> = {
   queued: "Analyzing transcript...",
   chunking_transcript: "Analyzing transcript...",
   summarizing_chunks: "Generating learning insights...",
+  calling_ai_provider: "Waiting for the AI provider...",
   extracting_concepts: "Extracting key concepts...",
   structuring_summary: "Structuring educational summary...",
   retrying: "Retrying AI analysis...",
@@ -91,7 +92,7 @@ export function useAISummary({ token, videoId }: UseAISummaryOptions) {
         setState("failed");
       }
     },
-    [token, videoId],
+    [refresh, token, videoId],
   );
 
   useEffect(() => {

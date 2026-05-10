@@ -2,7 +2,7 @@
 
 import { AlertCircle, BrainCircuit, Clock3, HelpCircle, Lightbulb, Loader2, RefreshCw } from "lucide-react";
 
-import type { RecallVideo, VideoLearningInsights } from "@recall/shared";
+import type { AISummaryJob, RecallVideo, VideoLearningInsights } from "@recall/shared";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn, formatTimestamp } from "@/lib/utils";
@@ -10,6 +10,7 @@ import { cn, formatTimestamp } from "@/lib/utils";
 type LearningIntelligencePanelProps = {
   video: RecallVideo | null;
   insights: VideoLearningInsights | null;
+  job: AISummaryJob | null;
   state: "idle" | "loading" | "processing" | "completed" | "failed";
   error: string | null;
   message: string;
@@ -24,6 +25,7 @@ const phaseProgress: Record<string, number> = {
   queued: 10,
   chunking_transcript: 24,
   summarizing_chunks: 48,
+  calling_ai_provider: 62,
   extracting_concepts: 72,
   structuring_summary: 88,
   retrying: 18,
@@ -34,6 +36,7 @@ const phaseProgress: Record<string, number> = {
 export function LearningIntelligencePanel({
   video,
   insights,
+  job,
   state,
   error,
   message,
@@ -42,7 +45,7 @@ export function LearningIntelligencePanel({
   onSeek,
 }: LearningIntelligencePanelProps) {
   const canGenerate = video?.transcript_status === "completed";
-  const phase = insights?.job?.payload.phase || insights?.job?.status || insights?.status || "pending";
+  const phase = job?.payload.phase || job?.status || insights?.status || "pending";
   const progress =
     state === "completed"
       ? 100

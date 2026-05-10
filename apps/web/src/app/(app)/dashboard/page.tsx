@@ -2,7 +2,15 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, BookOpen, CheckCircle2, Clock3, FolderPlus, Plus, Target } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Clock3,
+  FolderPlus,
+  Plus,
+  Target,
+} from "lucide-react";
 
 import { AddVideoDialog } from "@/components/spaces/add-video-dialog";
 import { CreateSpaceDialog } from "@/components/spaces/create-space-dialog";
@@ -35,14 +43,20 @@ export default function DashboardPage() {
         }))
       : [];
 
+  const primarySpace = spaces[0] || null;
+
   return (
     <div className="grid gap-6">
-      <header className="flex flex-col gap-5 border-b border-border pb-6 lg:flex-row lg:items-end lg:justify-between">
+      <header className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm text-muted">Welcome back, {user?.name?.split(" ")[0] || "builder"}.</p>
-          <h1 className="mt-2 font-heading text-3xl font-semibold text-foreground sm:text-4xl">
-            Learning dashboard
-          </h1>
+            <p className="text-sm text-muted">Welcome back, {user?.name?.split(" ")[0] || "friend"}.</p>
+            <h1 className="mt-2 font-heading text-3xl font-semibold text-foreground sm:text-4xl">
+              Learning Dashboard
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
+              Organize your spaces, track progress, and continue where you left off.
+            </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <CreateSpaceDialog
@@ -59,11 +73,12 @@ export default function DashboardPage() {
               trigger={
                 <Button>
                   <Plus />
-                  Quick Add
+                  Add Source
                 </Button>
               }
             />
           ) : null}
+        </div>
         </div>
       </header>
 
@@ -107,7 +122,18 @@ export default function DashboardPage() {
         </section>
 
         <aside className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
-          <h2 className="font-heading text-lg font-semibold text-foreground">Recent Activity</h2>
+          <h2 className="font-heading text-lg font-semibold text-foreground">Snapshot</h2>
+          {primarySpace ? (
+            <div className="mt-4 rounded-md border border-border bg-background/55 p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-muted">Current focus</p>
+              <p className="mt-2 line-clamp-2 text-sm font-medium text-foreground">{primarySpace.title}</p>
+              <p className="mt-2 text-xs text-muted">
+                {primarySpace.completed_count}/{primarySpace.video_count} completed • {primarySpace.progress}%
+              </p>
+            </div>
+          ) : null}
+
+          <h3 className="mt-5 text-sm font-semibold text-foreground">Recent Activity</h3>
           {error ? (
             <div className="mt-5 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
               Unable to load your spaces right now. {error}
@@ -175,3 +201,4 @@ function EmptyState() {
     </div>
   );
 }
+

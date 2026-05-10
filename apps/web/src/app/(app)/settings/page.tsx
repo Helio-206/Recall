@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogOut, ShieldCheck, UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,60 +13,45 @@ export default function SettingsPage() {
   const { user, logout } = useAuthStore();
 
   return (
-    <div className="grid gap-6">
-      <header className="border-b border-border pb-6">
-        <p className="text-sm text-muted">Workspace preferences</p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold text-foreground sm:text-4xl">
-          Settings
-        </h1>
+    <div className="mx-auto max-w-2xl grid gap-8 py-2">
+      <header>
+        <h1 className="font-heading text-2xl font-semibold text-foreground">Settings</h1>
+        <p className="mt-1 text-sm text-muted">Manage your account</p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <section className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
-          <div className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-md border border-border bg-background/80 text-primary">
-              <UserRound className="size-5" />
-            </span>
-            <div>
-              <h2 className="font-heading text-lg font-semibold text-foreground">Profile</h2>
-              <p className="text-sm text-muted">Account identity</p>
-            </div>
+      <section className="rounded-lg border border-border bg-surface/80 p-6 shadow-insetPanel">
+        <div className="flex items-center gap-3 mb-6">
+          <span className="grid size-9 place-items-center rounded-full border border-border bg-background/80 text-primary">
+            <UserRound className="size-4" />
+          </span>
+          <h2 className="font-medium text-foreground">Profile</h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-1.5">
+            <Label htmlFor="settings-name">Name</Label>
+            <Input id="settings-name" value={user?.name || ""} readOnly />
           </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="settings-name">Name</Label>
-              <Input id="settings-name" value={user?.name || ""} readOnly />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="settings-email">Email</Label>
-              <Input id="settings-email" value={user?.email || ""} readOnly />
-            </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="settings-email">Email</Label>
+            <Input id="settings-email" value={user?.email || ""} readOnly />
           </div>
-        </section>
+        </div>
+      </section>
 
-        <aside className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
-          <div className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-md border border-success/35 bg-success/10 text-success">
-              <ShieldCheck className="size-5" />
-            </span>
-            <div>
-              <h2 className="font-heading text-lg font-semibold text-foreground">Session</h2>
-              <p className="text-sm text-muted">JWT authenticated</p>
-            </div>
-          </div>
-          <Button
-            variant="danger"
-            className="mt-6 w-full"
-            onClick={() => {
-              logout();
-              router.replace("/login");
-            }}
-          >
-            <LogOut />
-            Logout
-          </Button>
-        </aside>
-      </div>
+      <section className="rounded-lg border border-border bg-surface/80 p-6 shadow-insetPanel">
+        <h2 className="font-medium text-foreground mb-1">Sign out</h2>
+        <p className="text-sm text-muted mb-5">You will be returned to the login screen.</p>
+        <Button
+          variant="danger"
+          onClick={() => {
+            logout();
+            router.replace("/login");
+          }}
+        >
+          <LogOut />
+          Sign out
+        </Button>
+      </section>
     </div>
   );
 }

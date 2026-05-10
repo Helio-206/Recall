@@ -95,7 +95,7 @@ def process_transcript_job(job_id: str) -> None:
                 transcript_job.payload = merge_payload(
                     transcript_job.payload,
                     phase="generating_transcript",
-                    method="whisper",
+                    method="faster-whisper",
                 )
                 db.commit()
 

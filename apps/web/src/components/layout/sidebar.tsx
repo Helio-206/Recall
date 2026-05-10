@@ -8,7 +8,6 @@ import {
   LogOut,
   Plus,
   Settings,
-  Sparkles,
 } from "lucide-react";
 
 import { Logo } from "@/components/logo";
@@ -52,14 +51,6 @@ export function Sidebar() {
             </Link>
           );
         })}
-      </div>
-
-      <div className="mt-5 rounded-lg border border-border bg-surface/80 p-3 shadow-insetPanel">
-        <div className="flex items-center gap-2 text-xs font-medium uppercase text-violet">
-          <Sparkles className="size-3.5" />
-          Phase 1
-        </div>
-        <p className="mt-2 text-sm leading-6 text-muted">Foundation build</p>
       </div>
 
       <div className="mt-auto grid gap-2">

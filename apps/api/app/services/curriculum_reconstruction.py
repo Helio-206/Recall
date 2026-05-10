@@ -216,6 +216,30 @@ class CurriculumReconstructionService:
         )
         profile.manual_order_index = payload.order_index if payload.locked else None
         profile.manual_override_locked = payload.locked
+
+        # Immediately apply the new order_index to the module_video rows so that
+        # _serialize_module (which sorts by order_index) reflects the change right away,
+        # without requiring a full curriculum rebuild.
+        if payload.locked and payload.order_index is not None:
+            for module in space.learning_modules:
+                entries = sorted(module.module_videos, key=lambda e: e.order_index)
+                entry_ids = [e.video_id for e in entries]
+                if video_id not in entry_ids:
+                    continue
+                # Remove the moved video and reinsert at the target position.
+                entry_ids.remove(video_id)
+                target = max(0, min(payload.order_index, len(entry_ids)))
+                entry_ids.insert(target, video_id)
+                # Use large temporary offsets to avoid the unique constraint during update.
+                offset = 100_000
+                for entry in entries:
+                    entry.order_index += offset
+                self.db.flush()
+                id_to_entry = {e.video_id: e for e in entries}
+                for new_index, vid_id in enumerate(entry_ids):
+                    id_to_entry[vid_id].order_index = new_index
+                break  # video found and reordered, done
+
         self.db.commit()
         return self.get_curriculum(space_id=space_id, user_id=user_id)
 

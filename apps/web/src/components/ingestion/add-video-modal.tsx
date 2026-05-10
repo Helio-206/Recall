@@ -95,9 +95,9 @@ export function AddVideoModal({ spaces, spaceId, trigger }: AddVideoModalProps) 
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add YouTube Source</DialogTitle>
+          <DialogTitle>Add Source</DialogTitle>
           <DialogDescription>
-            Paste a video or playlist URL. Recall will extract metadata without downloading files.
+            Paste a YouTube or Coursera URL. Recall extracts metadata first, without downloading video files.
           </DialogDescription>
         </DialogHeader>
         <form className="grid gap-4" onSubmit={onSubmit}>
@@ -121,7 +121,7 @@ export function AddVideoModal({ spaces, spaceId, trigger }: AddVideoModalProps) 
             </div>
           )}
           <div className="grid gap-2">
-            <Label htmlFor="video-url">YouTube URL</Label>
+            <Label htmlFor="video-url">Source URL</Label>
             <div className="relative">
               <LinkIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
               <Input
@@ -130,7 +130,7 @@ export function AddVideoModal({ spaces, spaceId, trigger }: AddVideoModalProps) 
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
                 className="pl-10"
-                placeholder="https://www.youtube.com/watch?v=..."
+                placeholder="https://www.youtube.com/watch?v=... or https://www.coursera.org/learn/..."
                 disabled={ingestion.isWorking}
                 required
               />

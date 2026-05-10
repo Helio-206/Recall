@@ -1,8 +1,11 @@
 from dataclasses import dataclass
+import re
 from urllib.parse import parse_qs, urlparse
 
+import httpx
+
 from app.core.config import get_settings
-from app.core.statuses import SourceType
+from app.core.statuses import Platform, SourceType
 
 
 class MetadataExtractionError(Exception):
@@ -39,16 +42,36 @@ class MetadataExtractor:
         "youtu.be",
     }
 
-    def validate_youtube_url(self, url: str) -> str:
+    coursera_hosts = {
+        "coursera.org",
+        "www.coursera.org",
+    }
+
+    def validate_source_url(self, url: str) -> str:
         parsed = urlparse(url)
         host = parsed.netloc.lower().removeprefix("www.")
-        if parsed.scheme not in {"http", "https"} or host not in self.youtube_hosts:
+        if parsed.scheme not in {"http", "https"}:
+            raise MetadataExtractionError("Paste a valid source URL (YouTube or Coursera).")
+        if host not in self.youtube_hosts and host not in {"coursera.org"}:
             raise MetadataExtractionError(
-                "Paste a valid YouTube video, playlist, or channel URL."
+                "Paste a valid YouTube or Coursera URL."
             )
         return url
 
+    def detect_platform(self, url: str) -> Platform:
+        parsed = urlparse(url)
+        host = parsed.netloc.lower().removeprefix("www.")
+        if host in self.youtube_hosts:
+            return "youtube"
+        if host in {"coursera.org"}:
+            return "coursera"
+        raise MetadataExtractionError("Paste a valid YouTube or Coursera URL.")
+
     def detect_source_type(self, url: str) -> SourceType:
+        platform = self.detect_platform(url)
+        if platform == "coursera":
+            return "single_video"
+
         parsed = urlparse(url)
         host = parsed.netloc.lower().removeprefix("www.")
         path = parsed.path.strip("/")
@@ -73,6 +96,10 @@ class MetadataExtractor:
         raise MetadataExtractionError("Paste a valid YouTube video, playlist, or channel URL.")
 
     def extract(self, url: str) -> ExtractedSource:
+        platform = self.detect_platform(url)
+        if platform == "coursera":
+            return self._extract_coursera(url)
+
         source_type = self.detect_source_type(url)
 
         try:
@@ -152,6 +179,50 @@ class MetadataExtractor:
             skipped_count=skipped_count,
         )
 
+    def _extract_coursera(self, url: str) -> ExtractedSource:
+        title = self._coursera_title_from_url(url)
+        author = "Coursera"
+        thumbnail = None
+
+        try:
+            response = httpx.get(
+                url,
+                timeout=10.0,
+                follow_redirects=True,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (X11; Linux x86_64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/126.0.0.0 Safari/537.36"
+                    )
+                },
+            )
+            if response.status_code < 400:
+                html = response.text[:350000]
+                title = self._match_meta_content(html, "og:title") or title
+                thumbnail = self._match_meta_content(html, "og:image")
+                author = self._match_meta_content(html, "og:site_name") or author
+        except Exception:
+            pass
+
+        video = ExtractedVideo(
+            title=title[:220],
+            url=url,
+            thumbnail=thumbnail,
+            author=author,
+            duration=None,
+            source_order=0,
+        )
+        return ExtractedSource(
+            source_type="single_video",
+            title=title,
+            author=author,
+            thumbnail=thumbnail,
+            duration=None,
+            videos=[video],
+            skipped_count=0,
+        )
+
     def _normalize_video(self, entry: dict, *, source_order: int) -> ExtractedVideo | None:
         video_id = self._video_id(entry)
         url = self._canonical_video_url(entry, video_id)
@@ -214,4 +285,33 @@ class MetadataExtractor:
             value = entry.get(key)
             if isinstance(value, str) and value.startswith("http"):
                 return value
+        return None
+
+    @staticmethod
+    def _coursera_title_from_url(url: str) -> str:
+        parsed = urlparse(url)
+        parts = [part for part in parsed.path.split("/") if part]
+        if not parts:
+            return "Coursera lesson"
+        slug = parts[-1].replace("-", " ").replace("_", " ").strip()
+        slug = re.sub(r"\s+", " ", slug)
+        return slug.title() if slug else "Coursera lesson"
+
+    @staticmethod
+    def _match_meta_content(html: str, property_name: str) -> str | None:
+        pattern = re.compile(
+            rf'<meta[^>]+property=["\']{re.escape(property_name)}["\'][^>]+content=["\']([^"\']+)["\']',
+            re.IGNORECASE,
+        )
+        match = pattern.search(html)
+        if match:
+            return match.group(1).strip()
+
+        fallback_pattern = re.compile(
+            rf'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']{re.escape(property_name)}["\']',
+            re.IGNORECASE,
+        )
+        fallback_match = fallback_pattern.search(html)
+        if fallback_match:
+            return fallback_match.group(1).strip()
         return None

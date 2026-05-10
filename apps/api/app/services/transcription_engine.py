@@ -15,31 +15,35 @@ class TranscriptionError(Exception):
 
 class WhisperTranscriber:
     def transcribe(self, audio_path: Path) -> list[TranscriptSegmentDraft]:
-        if find_spec("whisper") is None:
-            raise TranscriptionError("Whisper is not installed in the transcript worker.")
+        if find_spec("faster_whisper") is None:
+            raise TranscriptionError("faster-whisper is not installed in the transcript worker.")
 
         settings = get_settings()
         try:
             _ensure_ffmpeg_on_path()
-            model = _get_whisper_model(settings.whisper_model_name)
+            model = _get_whisper_model(settings.whisper_model_name, settings.whisper_fp16)
             options = {
-                "fp16": settings.whisper_fp16,
                 "task": "transcribe",
-                "verbose": None,
+                "temperature": 0.0,
+                "beam_size": 1,
+                "best_of": 1,
+                "condition_on_previous_text": False,
+                "vad_filter": True,
             }
             if settings.whisper_language:
                 options["language"] = settings.whisper_language
-            result = model.transcribe(str(audio_path), **options)
+            result, _ = model.transcribe(str(audio_path), **options)
+            decoded_segments = list(result)
         except Exception as exc:
             raise TranscriptionError("Whisper transcription failed.") from exc
 
         segments: list[TranscriptSegmentDraft] = []
-        for segment in result.get("segments") or []:
-            text = str(segment.get("text") or "").strip()
+        for segment in decoded_segments:
+            text = str(segment.text or "").strip()
             if not text:
                 continue
-            start_time = _coerce_timestamp(segment.get("start"))
-            end_time = _coerce_timestamp(segment.get("end"))
+            start_time = _coerce_timestamp(segment.start)
+            end_time = _coerce_timestamp(segment.end)
             if end_time <= start_time:
                 end_time = start_time + 0.25
             segments.append(
@@ -52,7 +56,9 @@ class WhisperTranscriber:
             )
 
         if not segments:
-            text = str(result.get("text") or "").strip()
+            text = " ".join(
+                segment.text.strip() for segment in decoded_segments if segment.text
+            ).strip()
             if text:
                 segments.append(
                     TranscriptSegmentDraft(
@@ -78,7 +84,7 @@ def _coerce_timestamp(value: object) -> float:
 def _ensure_ffmpeg_on_path() -> None:
     ffmpeg_path = resolve_ffmpeg_path()
     if not ffmpeg_path:
-        raise TranscriptionError("FFmpeg is not available for Whisper.")
+        raise TranscriptionError("FFmpeg is not available for transcription.")
 
     ffmpeg_dir = str(_path_directory_with_ffmpeg_alias(Path(ffmpeg_path)))
     current_path = os.environ.get("PATH", "")
@@ -105,8 +111,13 @@ def _path_directory_with_ffmpeg_alias(ffmpeg_path: Path) -> Path:
     return alias_dir
 
 
-@lru_cache(maxsize=2)
-def _get_whisper_model(model_name: str):
-    import whisper
+@lru_cache(maxsize=4)
+def _get_whisper_model(model_name: str, use_fp16: bool):
+    from faster_whisper import WhisperModel
 
-    return whisper.load_model(model_name)
+    if use_fp16:
+        try:
+            return WhisperModel(model_name, device="auto", compute_type="float16")
+        except Exception:
+            pass
+    return WhisperModel(model_name, device="auto", compute_type="int8")

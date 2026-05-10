@@ -1,0 +1,578 @@
+[
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 104,
+      "row": 87
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/core/config.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 87
+    },
+    "message": "Line too long (103 > 100)",
+    "noqa_row": 87,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 102,
+      "row": 31
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/repositories/ai_summary_jobs.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 31
+    },
+    "message": "Line too long (101 > 100)",
+    "noqa_row": 31,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 134,
+      "row": 17
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/repositories/video_notes.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 17
+    },
+    "message": "Line too long (133 > 100)",
+    "noqa_row": 17,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 104,
+      "row": 109
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/ai_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 109
+    },
+    "message": "Line too long (103 > 100)",
+    "noqa_row": 109,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 105,
+      "row": 111
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/ai_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 111
+    },
+    "message": "Line too long (104 > 100)",
+    "noqa_row": 111,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 123,
+      "row": 152
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/ai_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 152
+    },
+    "message": "Line too long (122 > 100)",
+    "noqa_row": 152,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 109,
+      "row": 153
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/ai_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 153
+    },
+    "message": "Line too long (108 > 100)",
+    "noqa_row": 153,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 106,
+      "row": 176
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/ai_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 176
+    },
+    "message": "Line too long (105 > 100)",
+    "noqa_row": 176,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 116,
+      "row": 200
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/ai_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 200
+    },
+    "message": "Line too long (115 > 100)",
+    "noqa_row": 200,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 104,
+      "row": 247
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/ai_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 247
+    },
+    "message": "Line too long (103 > 100)",
+    "noqa_row": 247,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 105,
+      "row": 284
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/ai_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 284
+    },
+    "message": "Line too long (104 > 100)",
+    "noqa_row": 284,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 107,
+      "row": 86
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/learning_intelligence.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 86
+    },
+    "message": "Line too long (106 > 100)",
+    "noqa_row": 86,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 110,
+      "row": 87
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/learning_intelligence.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 87
+    },
+    "message": "Line too long (109 > 100)",
+    "noqa_row": 87,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 108,
+      "row": 89
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/learning_intelligence.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 89
+    },
+    "message": "Line too long (107 > 100)",
+    "noqa_row": 89,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 108,
+      "row": 60
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/openrouter_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 60
+    },
+    "message": "Line too long (107 > 100)",
+    "noqa_row": 60,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 163,
+      "row": 70
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/openrouter_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 70
+    },
+    "message": "Line too long (162 > 100)",
+    "noqa_row": 70,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 114,
+      "row": 145
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/openrouter_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 145
+    },
+    "message": "Line too long (113 > 100)",
+    "noqa_row": 145,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 105,
+      "row": 221
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/openrouter_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 221
+    },
+    "message": "Line too long (104 > 100)",
+    "noqa_row": 221,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 120,
+      "row": 233
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/openrouter_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 233
+    },
+    "message": "Line too long (119 > 100)",
+    "noqa_row": 233,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 104,
+      "row": 288
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/openrouter_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 288
+    },
+    "message": "Line too long (103 > 100)",
+    "noqa_row": 288,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 109,
+      "row": 295
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/openrouter_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 295
+    },
+    "message": "Line too long (108 > 100)",
+    "noqa_row": 295,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 105,
+      "row": 316
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/openrouter_provider.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 316
+    },
+    "message": "Line too long (104 > 100)",
+    "noqa_row": 316,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 108,
+      "row": 80
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/search.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 80
+    },
+    "message": "Line too long (107 > 100)",
+    "noqa_row": 80,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 111,
+      "row": 85
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/search.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 85
+    },
+    "message": "Line too long (110 > 100)",
+    "noqa_row": 85,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 105,
+      "row": 119
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/search.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 119
+    },
+    "message": "Line too long (104 > 100)",
+    "noqa_row": 119,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 105,
+      "row": 121
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/search.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 121
+    },
+    "message": "Line too long (104 > 100)",
+    "noqa_row": 121,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 104,
+      "row": 123
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/search.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 123
+    },
+    "message": "Line too long (103 > 100)",
+    "noqa_row": 123,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 104,
+      "row": 83
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/search_backend.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 83
+    },
+    "message": "Line too long (103 > 100)",
+    "noqa_row": 83,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 112,
+      "row": 143
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/search_indexing.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 143
+    },
+    "message": "Line too long (111 > 100)",
+    "noqa_row": 143,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "F401",
+    "end_location": {
+      "column": 27,
+      "row": 18
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/transcription_engine.py",
+    "fix": null,
+    "location": {
+      "column": 20,
+      "row": 18
+    },
+    "message": "`whisper` imported but unused; consider using `importlib.util.find_spec` to test for availability",
+    "noqa_row": 18,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unused-import"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 116,
+      "row": 25
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/services/video_notes.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 25
+    },
+    "message": "Line too long (115 > 100)",
+    "noqa_row": 25,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 104,
+      "row": 45
+    },
+    "filename": "/home/helio/HEr/Recall/apps/api/app/workers/ai_summary_worker.py",
+    "fix": null,
+    "location": {
+      "column": 101,
+      "row": 45
+    },
+    "message": "Line too long (103 > 100)",
+    "noqa_row": 45,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  }
+]

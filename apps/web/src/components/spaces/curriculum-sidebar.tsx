@@ -10,8 +10,8 @@ import {
   Loader2,
   Lock,
   PlayCircle,
+  RefreshCw,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 
 import type { LearningModule } from "@recall/shared";
@@ -32,6 +32,7 @@ type CurriculumSidebarProps = {
   onSelectVideo: (videoId: string) => void;
   onRebuild: () => void;
   onMoveVideo: (videoId: string, direction: -1 | 1) => void;
+  onSetVideoOrder: (videoId: string, moduleTitle: string, orderIndex: number) => void;
   onResetVideo: (videoId: string) => void;
 };
 
@@ -48,6 +49,7 @@ export function CurriculumSidebar({
   onSelectVideo,
   onRebuild,
   onMoveVideo,
+  onSetVideoOrder,
   onResetVideo,
 }: CurriculumSidebarProps) {
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
@@ -68,16 +70,17 @@ export function CurriculumSidebar({
             <h2 className="font-heading text-base font-semibold text-foreground">Curriculum</h2>
             {healthScore !== null && (
               <Badge variant={healthScore >= 80 ? "success" : healthScore >= 60 ? "warm" : "neutral"}>
-                Health {healthScore}
+                {healthScore}
               </Badge>
             )}
           </div>
           <p className="mt-1 text-xs text-muted">
             {totalItems} lessons across {modules.length} modules
           </p>
+          <p className="mt-1 text-xs text-muted">Ajustes de ordem sao salvos automaticamente.</p>
         </div>
         <Button type="button" size="sm" variant="secondary" onClick={onRebuild} disabled={isRebuilding}>
-          {isRebuilding ? <Loader2 className="animate-spin" /> : <Sparkles />}
+          {isRebuilding ? <Loader2 className="animate-spin" /> : <RefreshCw />}
           Rebuild
         </Button>
       </div>
@@ -181,6 +184,28 @@ export function CurriculumSidebar({
                             </button>
 
                             <div className="flex items-center gap-1">
+                              <label className="sr-only" htmlFor={`order-${entry.id}`}>
+                                Set lesson order
+                              </label>
+                              <select
+                                id={`order-${entry.id}`}
+                                value={entry.order_index}
+                                disabled={isBusy}
+                                onChange={(event) =>
+                                  onSetVideoOrder(
+                                    entry.video_id,
+                                    module.title,
+                                    Number(event.target.value),
+                                  )
+                                }
+                                className="h-7 rounded border border-border bg-background px-2 text-xs text-foreground"
+                              >
+                                {module.module_videos.map((_, positionIndex) => (
+                                  <option key={`${entry.id}-${positionIndex}`} value={positionIndex}>
+                                    {positionIndex + 1}
+                                  </option>
+                                ))}
+                              </select>
                               <Button
                                 type="button"
                                 size="icon"
@@ -222,10 +247,6 @@ export function CurriculumSidebar({
                               </Button>
                             </div>
                           </div>
-
-                          {entry.rationale && (
-                            <p className="mt-2 break-words text-[11px] leading-5 text-muted">{entry.rationale}</p>
-                          )}
                         </div>
                       );
                     })}

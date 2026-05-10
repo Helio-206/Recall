@@ -40,7 +40,8 @@ class IngestionService:
                 detail="Learning space not found.",
             )
 
-        url = self.extractor.validate_youtube_url(str(payload.url))
+        url = self.extractor.validate_source_url(str(payload.url))
+        platform = self.extractor.detect_platform(url)
         try:
             source_type = self.extractor.detect_source_type(url)
         except MetadataExtractionError as exc:
@@ -56,7 +57,7 @@ class IngestionService:
             user_id=user_id,
             space_id=space_id,
             url=url,
-            platform="youtube",
+            platform=platform,
             source_type=source_type,
             title=payload.title,
         )

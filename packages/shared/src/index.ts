@@ -34,7 +34,7 @@ export type RecallSource = {
   user_id: string;
   space_id: string;
   url: string;
-  platform: "youtube";
+  platform: "youtube" | "coursera";
   source_type: SourceType;
   title: string | null;
   author: string | null;
@@ -96,7 +96,7 @@ export type TranscriptJob = {
     video_url?: string;
     segments_count?: number;
     model?: string;
-    method?: "youtube_captions" | "youtube_auto_captions" | "whisper";
+    method?: "youtube_captions" | "youtube_auto_captions" | "whisper" | "faster-whisper";
     language?: string;
   };
   error_message: string | null;

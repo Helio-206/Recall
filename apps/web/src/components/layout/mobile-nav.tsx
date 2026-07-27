@@ -19,11 +19,11 @@ export function MobileNav() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/85 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/80 bg-background/95 px-4 backdrop-blur-xl lg:hidden">
         <Logo />
         <SearchTriggerButton compact className="size-10 px-0" />
       </header>
-      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-3 rounded-lg border border-border bg-surface/95 p-1 shadow-premium backdrop-blur-xl lg:hidden">
+      <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-3 rounded-md border border-border bg-surface/95 p-1 shadow-premium backdrop-blur-xl lg:hidden">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;

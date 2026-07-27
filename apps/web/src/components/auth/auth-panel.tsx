@@ -162,26 +162,22 @@ export function AuthPanel({ mode }: AuthPanelProps) {
 
   return (
     <div className="grid min-h-screen grid-cols-1 bg-background lg:grid-cols-[minmax(0,0.95fr)_minmax(520px,1fr)]">
-      <section className="hidden border-r border-border bg-background/80 p-8 lg:flex lg:flex-col">
+      <section className="hidden border-r border-border/80 bg-background p-8 lg:flex lg:flex-col">
         <Logo />
         <div className="mt-auto max-w-xl">
-          <div className="mb-8 inline-flex rounded-md border border-violet/30 bg-violet/10 px-3 py-1 text-xs font-medium uppercase text-violet">
-            Developer MVP
-          </div>
-          <h1 className="font-heading text-5xl font-semibold leading-tight text-foreground">
-            Recall
+          <p className="font-mono text-xs text-warm">Your learning path, in one place.</p>
+          <h1 className="mt-5 font-heading text-5xl font-semibold leading-tight text-foreground">
+            Learn with continuity.
           </h1>
           <p className="mt-5 max-w-lg text-lg leading-8 text-muted">
-            Build focused learning spaces from technical videos, searchable transcripts, and AI notes.
+            Turn technical videos into focused curricula, readable transcripts, and progress you can
+            resume.
           </p>
-          <div className="mt-6 rounded-md border border-border bg-surface/70 p-4 text-sm leading-6 text-muted">
-            MVP scope now supports YouTube and Coursera sources. Create a space, ingest content, and keep technical learning organized across transcripts, notes, and summaries.
-          </div>
         </div>
       </section>
 
       <main className="flex min-h-screen items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md rounded-lg border border-border bg-surface/90 p-6 shadow-premium backdrop-blur-xl sm:p-8">
+        <div className="w-full max-w-md border border-border bg-surface p-6 shadow-premium sm:p-8">
           <Logo className="lg:hidden" />
           <div className="mt-8 lg:mt-0">
             <h2 className="font-heading text-2xl font-semibold text-foreground">
@@ -193,12 +189,6 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                 : "Continue building your learning system."}
             </p>
           </div>
-
-          {!isRegister ? (
-            <div className="mt-6 rounded-md border border-border bg-background/60 p-4 text-sm leading-6 text-muted">
-              Recall organizes technical study into spaces with searchable transcripts, AI summaries, and timestamped notes.
-            </div>
-          ) : null}
 
           <form className="mt-7 grid gap-4" onSubmit={onSubmit}>
             {isRegister && (
@@ -259,18 +249,14 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             </Button>
           </form>
 
-          {!isRegister ? (
+          {!isRegister && (googleClientId || googleError) ? (
             <div className="mt-5 grid gap-3">
               <div className="text-center text-xs uppercase tracking-[0.18em] text-muted">Or</div>
               {googleClientId ? (
                 <div className="flex justify-center">
                   <div ref={googleButtonRef} className="min-h-11" />
                 </div>
-              ) : (
-                <div className="rounded-md border border-border bg-background/60 px-3 py-2 text-center text-sm text-muted">
-                  Google login unavailable: set NEXT_PUBLIC_GOOGLE_CLIENT_ID and GOOGLE_OAUTH_CLIENT_IDS.
-                </div>
-              )}
+              ) : null}
               {googleError ? (
                 <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">
                   {googleError}

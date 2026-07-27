@@ -1,8 +1,23 @@
 "use client";
 
-import { AlertCircle, ArrowRight, CheckCircle2, Layers3, Loader2, Sparkles, Target } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Layers3,
+  Loader2,
+  RefreshCw,
+  Target,
+} from "lucide-react";
 
-import type { CurriculumHealth, LearningModule, RecallSpace, RecallVideo, SuggestedNextVideo } from "@recall/shared";
+import type {
+  CurriculumHealth,
+  LearningModule,
+  RecallSpace,
+  RecallVideo,
+  SuggestedNextVideo,
+} from "@recall/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VideoCard } from "@/components/spaces/video-card";
@@ -44,7 +59,7 @@ export function CurriculumOverview({
         <Metric label="Progress" value={`${space.progress}%`} icon={Target} />
         <Metric label="Completed" value={space.completed_count} icon={CheckCircle2} />
         <Metric label="Duration" value={formatDuration(totalDuration)} icon={Layers3} />
-        <Metric label="Health" value={health ? `${health.score}/100` : "Pending"} icon={Sparkles} />
+        <Metric label="Health" value={health ? `${health.score}/100` : "Pending"} icon={Activity} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -53,18 +68,21 @@ export function CurriculumOverview({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="default">Suggested Next Lesson</Badge>
-                {suggestedNextVideo && <Badge variant="neutral">{suggestedNextVideo.module_title}</Badge>}
+                {suggestedNextVideo && (
+                  <Badge variant="neutral">{suggestedNextVideo.module_title}</Badge>
+                )}
               </div>
               <h2 className="mt-3 font-heading text-lg font-semibold text-foreground">
                 {nextVideo ? nextVideo.title : "Rebuild the curriculum to generate a next step."}
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted">
-                {suggestedNextVideo?.reason || "Use curriculum reconstruction to unlock the recommended next lesson."}
+                {suggestedNextVideo?.reason ||
+                  "Use curriculum reconstruction to unlock the recommended next lesson."}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="secondary" onClick={onRebuild} disabled={isRebuilding}>
-                {isRebuilding ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                {isRebuilding ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                 Rebuild Curriculum
               </Button>
               {nextVideo && (
@@ -79,8 +97,16 @@ export function CurriculumOverview({
 
         <section className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="font-heading text-lg font-semibold text-foreground">Curriculum Health</h2>
-            {health && <Badge variant={health.score >= 80 ? "success" : health.score >= 60 ? "warm" : "neutral"}>{health.score}</Badge>}
+            <h2 className="font-heading text-lg font-semibold text-foreground">
+              Curriculum Health
+            </h2>
+            {health && (
+              <Badge
+                variant={health.score >= 80 ? "success" : health.score >= 60 ? "warm" : "neutral"}
+              >
+                {health.score}
+              </Badge>
+            )}
           </div>
           {health ? (
             <div className="mt-4 space-y-4">
@@ -104,31 +130,55 @@ export function CurriculumOverview({
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted">No curriculum risks detected in the latest reconstruction.</p>
+                <p className="text-sm text-muted">
+                  No curriculum risks detected in the latest reconstruction.
+                </p>
               )}
             </div>
           ) : (
-            <p className="mt-4 text-sm text-muted">Health metrics appear after the first reconstruction run.</p>
+            <p className="mt-4 text-sm text-muted">
+              Health metrics appear after the first reconstruction run.
+            </p>
           )}
         </section>
       </div>
 
       <div className="grid gap-4">
         {modules.map((module) => (
-          <section key={module.id} className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
+          <section
+            key={module.id}
+            className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel"
+          >
             <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="neutral">Module {module.order_index + 1}</Badge>
-                  <Badge variant={module.difficulty_level === "Advanced" ? "warm" : module.difficulty_level === "Beginner" ? "success" : "neutral"}>
+                  <Badge
+                    variant={
+                      module.difficulty_level === "Advanced"
+                        ? "warm"
+                        : module.difficulty_level === "Beginner"
+                          ? "success"
+                          : "neutral"
+                    }
+                  >
                     {module.difficulty_level}
                   </Badge>
                 </div>
-                <h2 className="mt-3 font-heading text-xl font-semibold text-foreground">{module.title}</h2>
-                {module.description && <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{module.description}</p>}
+                <h2 className="mt-3 font-heading text-xl font-semibold text-foreground">
+                  {module.title}
+                </h2>
+                {module.description && (
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                    {module.description}
+                  </p>
+                )}
               </div>
               <div className="min-w-[180px]">
-                <ProgressBar value={module.progress} label={`${module.completed_count}/${module.video_count} complete`} />
+                <ProgressBar
+                  value={module.progress}
+                  label={`${module.completed_count}/${module.video_count} complete`}
+                />
               </div>
             </div>
 

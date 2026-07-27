@@ -1,3 +1,4 @@
+# Disabled locally to stop scheduled GitHub Actions billing.
 name: Recall Daily Automation
 
 on:

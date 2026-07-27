@@ -1,11 +1,16 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock3, Command, FileSearch, Loader2, Search, Sparkles } from "lucide-react";
+import { Clock3, Command, FileSearch, Loader2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 
-import type { SearchKind, SearchResult, SearchResultClickPayload, SearchQuery } from "@recall/shared";
+import type {
+  SearchKind,
+  SearchResult,
+  SearchResultClickPayload,
+  SearchQuery,
+} from "@recall/shared";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -210,7 +215,7 @@ export function GlobalSearchModal() {
                 Search Your Learning Knowledge
               </DialogTitle>
               <DialogDescription className="mt-1">
-                Find transcript sections, AI summaries, notes, concepts, and important moments instantly.
+                Find transcript sections, notes, concepts, and important moments instantly.
               </DialogDescription>
             </div>
             <div className="hidden items-center gap-2 rounded-md border border-border bg-surface/80 px-3 py-2 text-xs text-muted sm:flex">
@@ -241,7 +246,7 @@ export function GlobalSearchModal() {
                   type="button"
                   onClick={() => setKind(option.value)}
                   className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                    "rounded border px-3 py-1.5 text-xs font-medium transition-colors",
                     kind === option.value
                       ? "border-primary/40 bg-primary/10 text-foreground"
                       : "border-border bg-background/70 text-muted hover:border-primary/25 hover:text-foreground",
@@ -274,14 +279,16 @@ export function GlobalSearchModal() {
               />
             ) : !shouldSearch && recentSearches.length === 0 ? (
               <ModalState
-                icon={<Sparkles className="size-5" />}
+                icon={<FileSearch className="size-5" />}
                 title="Search across everything you learned"
                 body="Press Cmd/Ctrl + K anytime to jump to concepts, transcript explanations, notes, and important moments."
               />
             ) : (
               <div className="grid gap-3">
                 {!shouldSearch ? (
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">Recent searches</p>
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">
+                    Recent searches
+                  </p>
                 ) : (
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">
                     {total} result{total === 1 ? "" : "s"}
@@ -324,7 +331,12 @@ export function GlobalSearchModal() {
 
                 {shouldSearch && canLoadMore ? (
                   <div className="pt-2">
-                    <Button type="button" variant="secondary" onClick={() => void loadMore()} disabled={loading}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => void loadMore()}
+                      disabled={loading}
+                    >
                       {loading ? <Loader2 className="animate-spin" /> : null}
                       Load more
                     </Button>
@@ -382,24 +394,14 @@ function SearchResultCard({
         </span>
       </div>
 
-      <p
-        className="mt-3 text-sm leading-6 text-foreground/85"
-      >
+      <p className="mt-3 text-sm leading-6 text-foreground/85">
         {renderHighlightedExcerpt(result.highlighted_excerpt || result.excerpt)}
       </p>
     </motion.button>
   );
 }
 
-function ModalState({
-  icon,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-}) {
+function ModalState({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
     <div className="grid min-h-[360px] place-items-center rounded-xl border border-border bg-surface/60 px-6 py-10 text-center shadow-insetPanel">
       <div>

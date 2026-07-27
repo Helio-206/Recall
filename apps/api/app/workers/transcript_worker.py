@@ -33,7 +33,10 @@ def process_transcript_job(job_id: str) -> None:
             logger.error("Transcript job %s was not found.", job_id)
             return
         if transcript_job.status == COMPLETED:
-            logger.info("Transcript job %s was already completed. Skipping worker execution.", job_id)
+            logger.info(
+                "Transcript job %s was already completed. Skipping worker execution.",
+                job_id,
+            )
             return
 
         video = videos.get(transcript_job.video_id)

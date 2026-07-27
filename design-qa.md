@@ -67,7 +67,6 @@ Fixes:
 
 ## Follow-up Polish
 
-- P3: The fixed Continue control overlays a small portion of the mobile lesson rail. It remains
-  readable and operable, but a future mobile-specific bottom sheet could create more separation.
+- No remaining visual issue blocks the selected MVP direction.
 
 final result: passed

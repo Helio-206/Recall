@@ -48,7 +48,7 @@ export function LessonRail({ modules, activeVideoId, onSelectVideo }: LessonRail
   return (
     <nav
       aria-label="Lesson navigation"
-      className="sticky bottom-20 z-20 mt-5 flex h-[92px] items-stretch border border-border/80 bg-surface/95 shadow-premium backdrop-blur-xl lg:bottom-4"
+      className="sticky bottom-20 z-20 mr-28 mt-5 flex h-[92px] items-stretch border border-border/80 bg-surface/95 shadow-premium backdrop-blur-xl lg:bottom-4 lg:mr-0"
     >
       <Button
         type="button"

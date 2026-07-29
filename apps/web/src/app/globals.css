@@ -15,6 +15,7 @@
 html {
   color-scheme: dark;
   background: #090a0d;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -63,4 +64,41 @@ select {
 .thin-scrollbar::-webkit-scrollbar-thumb {
   background: #2f3140;
   border-radius: 999px;
+}
+
+.route-loading-bar {
+  width: 100%;
+  transform-origin: left;
+  animation: route-loading-progress 1.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes route-loading-progress {
+  0% {
+    transform: scaleX(0);
+    opacity: 0.5;
+  }
+
+  55% {
+    transform: scaleX(0.78);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

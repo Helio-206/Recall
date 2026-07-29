@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { AppSplash } from "@/components/layout/app-splash";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,6 +17,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className="dark">
       <body>
         <div className="app-vignette" />
+        <AppSplash />
         {children}
       </body>
     </html>

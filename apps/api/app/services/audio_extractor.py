@@ -37,8 +37,7 @@ class TemporaryAudioExtractor:
             "postprocessors": [
                 {
                     "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "32",
+                    "preferredcodec": "wav",
                 }
             ],
             "postprocessor_args": ["-ac", "1", "-ar", "16000"],
@@ -54,7 +53,7 @@ class TemporaryAudioExtractor:
 
         audio_files = sorted(
             path
-            for extension in ("*.mp3", "*.m4a", "*.aac", "*.opus", "*.wav")
+            for extension in ("*.wav", "*.mp3", "*.m4a", "*.aac", "*.opus")
             for path in output_dir.glob(extension)
         )
         if not audio_files:

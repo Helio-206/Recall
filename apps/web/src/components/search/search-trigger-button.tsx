@@ -18,14 +18,13 @@ export function SearchTriggerButton({
     <Button
       type="button"
       variant="secondary"
-      className={cn(compact ? "h-10 px-3" : "justify-between", className)}
+      className={cn(compact ? "h-10 px-3" : "justify-start", className)}
       onClick={() => openGlobalSearch()}
     >
       <span className="flex items-center gap-2">
         <Search />
-        {!compact ? "Search your knowledge" : null}
+        {!compact ? "Search" : null}
       </span>
-      {!compact ? <span className="font-mono text-xs text-muted">Ctrl K</span> : null}
     </Button>
   );
 }

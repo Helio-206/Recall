@@ -1,115 +1,84 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  Lock,
-  PlayCircle,
-  RefreshCw,
-  RotateCcw,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, ChevronDown, ChevronRight, Circle, FileText, Loader2, Play } from "lucide-react";
 
 import type { LearningModule } from "@recall/shared";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { cn, formatDuration } from "@/lib/utils";
 
 type CurriculumSidebarProps = {
   modules: LearningModule[];
   activeVideoId: string | null;
   totalItems: number;
-  healthScore: number | null;
-  jobStatus: string | null;
+  completedItems: number;
+  progress: number;
   isLoading?: boolean;
   error?: string | null;
-  isRebuilding?: boolean;
-  overrideVideoId?: string | null;
   onSelectVideo: (videoId: string) => void;
-  onRebuild: () => void;
-  onMoveVideo: (videoId: string, direction: -1 | 1) => void;
-  onSetVideoOrder: (videoId: string, moduleTitle: string, orderIndex: number) => void;
-  onResetVideo: (videoId: string) => void;
 };
 
 export function CurriculumSidebar({
   modules,
   activeVideoId,
   totalItems,
-  healthScore,
-  jobStatus,
+  completedItems,
+  progress,
   isLoading = false,
   error = null,
-  isRebuilding = false,
-  overrideVideoId = null,
   onSelectVideo,
-  onRebuild,
-  onMoveVideo,
-  onSetVideoOrder,
-  onResetVideo,
 }: CurriculumSidebarProps) {
+  const activeModuleId = useMemo(
+    () =>
+      modules.find((module) =>
+        module.module_videos.some((entry) => entry.video_id === activeVideoId),
+      )?.id ?? null,
+    [activeVideoId, modules],
+  );
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
   useEffect(() => {
-    setExpandedIds((current) => {
-      const next = new Set(current);
-      for (const learningModule of modules) next.add(learningModule.id);
-      return Array.from(next);
-    });
-  }, [modules]);
+    const preferredId = activeModuleId ?? modules[0]?.id;
+    if (!preferredId) return;
+    setExpandedIds((current) =>
+      current.includes(preferredId) ? current : [...current, preferredId],
+    );
+  }, [activeModuleId, modules]);
 
   return (
-    <div className="overflow-x-hidden rounded-lg border border-border bg-surface/80 p-4 shadow-insetPanel xl:sticky xl:top-8 xl:h-[calc(100vh-4rem)] xl:overflow-y-auto">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-heading text-base font-semibold text-foreground">Curriculum</h2>
-            {healthScore !== null && (
-              <Badge variant={healthScore >= 80 ? "success" : healthScore >= 60 ? "warm" : "neutral"}>
-                {healthScore}
-              </Badge>
-            )}
+    <aside className="flex min-h-[440px] flex-col border-l border-border/70 bg-background xl:sticky xl:top-7 xl:h-[calc(100vh-3.5rem)]">
+      <header className="border-b border-border/70 px-5 py-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="font-heading text-sm font-semibold text-foreground">Curriculum</h2>
+            <p className="mt-1 text-xs text-muted">
+              {completedItems} of {totalItems} lessons complete
+            </p>
           </div>
-          <p className="mt-1 text-xs text-muted">
-            {totalItems} lessons across {modules.length} modules
-          </p>
-          <p className="mt-1 text-xs text-muted">Ajustes de ordem sao salvos automaticamente.</p>
+          <span className="font-mono text-xs text-warm">{progress}%</span>
         </div>
-        <Button type="button" size="sm" variant="secondary" onClick={onRebuild} disabled={isRebuilding}>
-          {isRebuilding ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-          Rebuild
-        </Button>
-      </div>
+        <Progress value={progress} className="mt-3 h-1 bg-white/[0.07] [&>div]:bg-warm" />
+      </header>
 
-      {jobStatus && (
-        <div className="mt-3 rounded-md border border-border bg-background/60 px-3 py-2 text-xs text-muted">
-          Reconstruction status: <span className="text-foreground">{jobStatus}</span>
-        </div>
-      )}
-
-      {error && !modules.length && (
-        <div className="mt-4 rounded-md border border-border bg-background/60 p-3 text-sm text-muted">
-          {error}
-        </div>
-      )}
-
-      <div className="mt-4 grid gap-3">
+      <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto pb-24">
         {isLoading && !modules.length ? (
-          <div className="space-y-2">
-            <div className="h-20 animate-pulse rounded-lg border border-border bg-background/60" />
-            <div className="h-20 animate-pulse rounded-lg border border-border bg-background/60" />
+          <div className="grid place-items-center py-16 text-muted">
+            <Loader2 className="size-4 animate-spin" />
           </div>
+        ) : error && !modules.length ? (
+          <p className="px-5 py-8 text-sm leading-6 text-muted">{error}</p>
         ) : (
           modules.map((module) => {
             const isExpanded = expandedIds.includes(module.id);
+            const isComplete =
+              module.video_count > 0 && module.completed_count === module.video_count;
+
             return (
-              <section key={module.id} className="rounded-lg border border-border bg-background/55">
+              <section key={module.id} className="border-b border-border/60">
                 <button
                   type="button"
+                  aria-expanded={isExpanded}
                   onClick={() =>
                     setExpandedIds((current) =>
                       current.includes(module.id)
@@ -117,152 +86,102 @@ export function CurriculumSidebar({
                         : [...current, module.id],
                     )
                   }
-                  className="flex w-full items-start justify-between gap-3 p-3 text-left"
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors duration-200 hover:bg-white/[0.025]"
                 >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted">
-                        Module {module.order_index + 1}
-                      </span>
-                      <Badge variant={difficultyVariant(module.difficulty_level)}>
-                        {module.difficulty_level}
-                      </Badge>
-                    </div>
-                    <h3 className="mt-2 break-words text-sm font-medium text-foreground">{module.title}</h3>
-                    {module.description && (
-                      <p className="mt-1 break-words text-xs leading-5 text-muted">{module.description}</p>
+                  <span
+                    className={cn(
+                      "grid size-5 shrink-0 place-items-center rounded-full border text-[10px]",
+                      isComplete
+                        ? "border-success/35 bg-success/10 text-success"
+                        : "border-border text-muted",
                     )}
-                    <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-muted">
-                      <span>{module.progress}% complete</span>
-                      <span>{module.video_count} lessons</span>
-                      <span>{formatDuration((module.estimated_duration_minutes ?? 0) * 60)}</span>
-                    </div>
-                  </div>
+                  >
+                    {isComplete ? <Check className="size-3" /> : module.order_index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-foreground">
+                      {module.title}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-muted">
+                      {module.completed_count}/{module.video_count} lessons
+                    </span>
+                  </span>
                   {isExpanded ? (
-                    <ChevronDown className="mt-1 size-4 text-muted" />
+                    <ChevronDown className="size-4 shrink-0 text-muted" />
                   ) : (
-                    <ChevronRight className="mt-1 size-4 text-muted" />
+                    <ChevronRight className="size-4 shrink-0 text-muted" />
                   )}
                 </button>
 
-                {isExpanded && (
-                  <div className="border-t border-border px-2 pb-2 pt-1">
-                    {module.module_videos.map((entry, index) => {
-                      const isActive = activeVideoId === entry.video_id;
-                      const isBusy = overrideVideoId === entry.video_id;
-                      return (
-                        <div
-                          key={entry.id}
-                          className={cn(
-                            "mt-2 overflow-x-hidden rounded-md border p-2 transition-colors",
-                            isActive
-                              ? "border-primary/45 bg-primary/10"
-                              : "border-border bg-surface/50",
-                          )}
-                        >
-                          <div className="flex items-start gap-2">
+                <AnimatePresence initial={false}>
+                  {isExpanded ? (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="pb-2">
+                        {module.module_videos.map((entry) => {
+                          const isActive = activeVideoId === entry.video_id;
+                          return (
                             <button
+                              key={entry.id}
                               type="button"
+                              aria-current={isActive ? "step" : undefined}
                               onClick={() => onSelectVideo(entry.video_id)}
-                              className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                              className={cn(
+                                "relative flex w-full items-start gap-3 px-5 py-2.5 text-left transition-colors duration-200",
+                                isActive
+                                  ? "bg-primary/[0.09] text-foreground"
+                                  : "text-muted hover:bg-white/[0.025] hover:text-foreground",
+                              )}
                             >
-                              <span className="mt-0.5 text-muted">
+                              {isActive ? (
+                                <motion.span
+                                  layoutId="curriculum-active"
+                                  className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-primary"
+                                />
+                              ) : null}
+                              <span className="mt-0.5 grid size-4 shrink-0 place-items-center">
                                 {entry.video.completed ? (
-                                  <CheckCircle2 className="size-4 text-success" />
+                                  <Check className="size-3.5 text-success" />
+                                ) : isActive ? (
+                                  <Play className="size-3.5 fill-primary text-primary" />
                                 ) : (
-                                  <PlayCircle className="size-4" />
+                                  <Circle className="size-3 text-muted/70" />
                                 )}
                               </span>
-                                <span className="min-w-0">
-                                  <span className="block break-words text-sm text-foreground">
-                                  {module.order_index + 1}.{entry.order_index + 1} {entry.video.title}
+                              <span className="min-w-0 flex-1">
+                                <span className="line-clamp-2 text-sm leading-5">
+                                  {entry.order_index + 1}. {entry.video.title}
                                 </span>
-                                <span className="mt-1 block text-[11px] text-muted">
-                                  {entry.video.author || "Imported source"}
+                                <span className="mt-1 flex items-center gap-2 text-[11px] text-muted">
+                                  <span>{formatDuration(entry.video.duration)}</span>
+                                  {entry.video.transcript_status === "completed" ? (
+                                    <>
+                                      <span aria-hidden="true">·</span>
+                                      <span className="inline-flex items-center gap-1">
+                                        <FileText className="size-3" />
+                                        Transcript
+                                      </span>
+                                    </>
+                                  ) : null}
                                 </span>
                               </span>
                             </button>
-
-                            <div className="flex items-center gap-1">
-                              <label className="sr-only" htmlFor={`order-${entry.id}`}>
-                                Set lesson order
-                              </label>
-                              <select
-                                id={`order-${entry.id}`}
-                                value={entry.order_index}
-                                disabled={isBusy}
-                                onChange={(event) =>
-                                  onSetVideoOrder(
-                                    entry.video_id,
-                                    module.title,
-                                    Number(event.target.value),
-                                  )
-                                }
-                                className="h-7 rounded border border-border bg-background px-2 text-xs text-foreground"
-                              >
-                                {module.module_videos.map((_, positionIndex) => (
-                                  <option key={`${entry.id}-${positionIndex}`} value={positionIndex}>
-                                    {positionIndex + 1}
-                                  </option>
-                                ))}
-                              </select>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="size-7"
-                                disabled={isBusy || index === 0}
-                                onClick={() => onMoveVideo(entry.video_id, -1)}
-                                aria-label={`Move ${entry.video.title} earlier`}
-                              >
-                                <ArrowUp className="size-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="size-7"
-                                disabled={isBusy || index === module.module_videos.length - 1}
-                                onClick={() => onMoveVideo(entry.video_id, 1)}
-                                aria-label={`Move ${entry.video.title} later`}
-                              >
-                                <ArrowDown className="size-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="size-7"
-                                disabled={isBusy}
-                                onClick={() => onResetVideo(entry.video_id)}
-                                aria-label={`Reset manual order for ${entry.video.title}`}
-                              >
-                                {entry.is_manual_override ? (
-                                  <Lock className="size-3.5 text-primary" />
-                                ) : isBusy ? (
-                                  <Loader2 className="size-3.5 animate-spin" />
-                                ) : (
-                                  <RotateCcw className="size-3.5" />
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
               </section>
             );
           })
         )}
       </div>
-    </div>
+    </aside>
   );
-}
-
-function difficultyVariant(level: LearningModule["difficulty_level"]) {
-  if (level === "Advanced") return "warm";
-  if (level === "Beginner") return "success";
-  return "neutral";
 }

@@ -1,20 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { ArrowRight, Loader2, Plus, RefreshCw } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, ArrowRight, CheckCircle2, Plus } from "lucide-react";
 
-import type { LearningModule, RecallVideo, SpaceCurriculum } from "@recall/shared";
-import { LearningIntelligencePanel } from "@/components/ai/learning-intelligence-panel";
+import type { LearningModule, RecallVideo } from "@recall/shared";
 import { VideoNotesPanel } from "@/components/notes/video-notes-panel";
 import { AddVideoDialog } from "@/components/spaces/add-video-dialog";
-import { CurriculumOverview } from "@/components/spaces/curriculum-overview";
 import { CurriculumSidebar } from "@/components/spaces/curriculum-sidebar";
+import { LessonRail } from "@/components/spaces/lesson-rail";
 import { VideoPlayer, type VideoPlayerHandle } from "@/components/spaces/video-player";
 import { TranscriptPanel } from "@/components/transcript/transcript-panel";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAISummary } from "@/hooks/use-ai-summary";
 import { useAuthStore } from "@/stores/auth-store";
 import { useSpaceStore } from "@/stores/space-store";
 
@@ -28,8 +29,6 @@ export default function SpaceDetailPage() {
     fetchSpace,
     fetchCurriculum,
     updateVideo,
-    rebuildCurriculum,
-    updateCurriculumOverride,
     isLoading,
     isCurriculumLoading,
     error,
@@ -37,12 +36,11 @@ export default function SpaceDetailPage() {
   } = useSpaceStore();
   const [updatingVideoId, setUpdatingVideoId] = useState<string | null>(null);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("transcript");
   const [activeTimestamp, setActiveTimestamp] = useState<number | null>(null);
   const [currentPlaybackTime, setCurrentPlaybackTime] = useState(0);
-  const [isRebuildingCurriculum, setIsRebuildingCurriculum] = useState(false);
-  const [overrideVideoId, setOverrideVideoId] = useState<string | null>(null);
   const playerRef = useRef<VideoPlayerHandle | null>(null);
+  const playerSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (token && params.id) void fetchSpace(token, params.id);
@@ -50,13 +48,17 @@ export default function SpaceDetailPage() {
 
   useEffect(() => {
     if (token && params.id) void fetchCurriculum(token, params.id);
-  }, [fetchCurriculum, params.id, selectedSpace?.completed_count, selectedSpace?.video_count, token]);
+  }, [
+    fetchCurriculum,
+    params.id,
+    selectedSpace?.completed_count,
+    selectedSpace?.video_count,
+    token,
+  ]);
 
   useEffect(() => {
     const status = selectedCurriculum?.latest_job?.status;
-    if (!token || !params.id || (status !== "pending" && status !== "processing")) {
-      return;
-    }
+    if (!token || !params.id || (status !== "pending" && status !== "processing")) return;
 
     const intervalId = window.setInterval(() => {
       void fetchCurriculum(token, params.id);
@@ -78,35 +80,55 @@ export default function SpaceDetailPage() {
       return;
     }
 
-    const activeVideoExists = videos.some((video) => video.id === activeVideoId);
-    if (!activeVideoId || !activeVideoExists) {
-      const nextVideo = videos.find((video) => !video.completed) ?? videos[0];
-      setActiveVideoId(nextVideo.id);
+    if (!activeVideoId || !videos.some((video) => video.id === activeVideoId)) {
+      setActiveVideoId((videos.find((video) => !video.completed) ?? videos[0]).id);
     }
   }, [activeVideoId, searchParams, selectedSpace?.videos]);
+
+  useEffect(() => {
+    const nextTab = searchParams.get("tab");
+    if (nextTab === "notes" || nextTab === "transcript") setActiveTab(nextTab);
+    if (nextTab === "ai-summary") setActiveTab("transcript");
+  }, [searchParams]);
+
+  const videos = selectedSpace?.videos ?? [];
+  const modules = selectedCurriculum?.modules ?? buildFallbackModules(videos);
+  const orderedVideos = useMemo(
+    () => modules.flatMap((module) => module.module_videos.map((entry) => entry.video)),
+    [modules],
+  );
+  const suggestedVideo =
+    videos.find((video) => video.id === selectedCurriculum?.suggested_next_video?.video_id) ??
+    videos.find((video) => !video.completed) ??
+    videos[0] ??
+    null;
+  const activeVideo = videos.find((video) => video.id === activeVideoId) ?? suggestedVideo ?? null;
+  const activeIndex = orderedVideos.findIndex((video) => video.id === activeVideo?.id);
+  const followingVideo =
+    (activeVideo?.completed ? orderedVideos[activeIndex + 1] : activeVideo) ??
+    suggestedVideo ??
+    activeVideo;
 
   const onTranscriptCompleted = useCallback(async () => {
     if (!token || !params.id) return;
     await fetchSpace(token, params.id);
   }, [fetchSpace, params.id, token]);
 
-  const videos = selectedSpace?.videos ?? [];
-  const modules = selectedCurriculum?.modules ?? buildFallbackModules(videos);
-  const nextVideo =
-    videos.find((video) => video.id === selectedCurriculum?.suggested_next_video?.video_id) ??
-    videos.find((video) => !video.completed) ??
-    videos[0];
-  const activeVideo = videos.find((video) => video.id === activeVideoId) ?? nextVideo ?? null;
-
-  const aiSummary = useAISummary({
-    token,
-    videoId: activeVideo?.id ?? null,
-  });
-
   const handleSeek = useCallback((seconds: number) => {
     setActiveTimestamp(seconds);
     playerRef.current?.seekTo(seconds);
   }, []);
+
+  const handleSelectVideo = useCallback((videoId: string) => {
+    setActiveVideoId(videoId);
+    setActiveTimestamp(null);
+    setCurrentPlaybackTime(0);
+  }, []);
+
+  const handleContinue = useCallback(() => {
+    if (followingVideo) handleSelectVideo(followingVideo.id);
+    playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [followingVideo, handleSelectVideo]);
 
   async function onToggle(video: RecallVideo) {
     if (!token) return;
@@ -118,71 +140,6 @@ export default function SpaceDetailPage() {
     }
   }
 
-  async function onRebuildCurriculum() {
-    if (!token || !params.id) return;
-    setIsRebuildingCurriculum(true);
-    try {
-      await rebuildCurriculum(token, params.id, { force: true });
-      await fetchCurriculum(token, params.id);
-    } finally {
-      setIsRebuildingCurriculum(false);
-    }
-  }
-
-  async function onMoveVideo(videoId: string, direction: -1 | 1) {
-    if (!token || !params.id || !selectedCurriculum) return;
-    const entry = findCurriculumEntry(selectedCurriculum, videoId);
-    if (!entry) return;
-
-    const targetIndex = Math.max(0, entry.entry.order_index + direction);
-    setOverrideVideoId(videoId);
-    try {
-      await updateCurriculumOverride(token, params.id, videoId, {
-        module_title: entry.module.title,
-        order_index: targetIndex,
-        locked: true,
-      });
-    } finally {
-      setOverrideVideoId(null);
-    }
-  }
-
-  async function onSetVideoOrder(videoId: string, moduleTitle: string, orderIndex: number) {
-    if (!token || !params.id) return;
-    setOverrideVideoId(videoId);
-    try {
-      await updateCurriculumOverride(token, params.id, videoId, {
-        module_title: moduleTitle,
-        order_index: Math.max(0, orderIndex),
-        locked: true,
-      });
-    } finally {
-      setOverrideVideoId(null);
-    }
-  }
-
-  async function onResetVideo(videoId: string) {
-    if (!token || !params.id || !selectedCurriculum) return;
-    setOverrideVideoId(videoId);
-    try {
-      await updateCurriculumOverride(token, params.id, videoId, { locked: false });
-    } finally {
-      setOverrideVideoId(null);
-    }
-  }
-
-  useEffect(() => {
-    setActiveTimestamp(null);
-    setCurrentPlaybackTime(0);
-  }, [activeVideo?.id]);
-
-  useEffect(() => {
-    const nextTab = searchParams.get("tab");
-    if (nextTab === "transcript" || nextTab === "ai-summary" || nextTab === "notes") {
-      setActiveTab(nextTab);
-    }
-  }, [searchParams]);
-
   useEffect(() => {
     const requestedVideoId = searchParams.get("video");
     const requestedTime = Number(searchParams.get("t") || 0);
@@ -193,173 +150,174 @@ export default function SpaceDetailPage() {
   }, [activeVideo, searchParams]);
 
   if (isLoading && !selectedSpace) {
-    return <div className="h-[70vh] animate-pulse rounded-lg border border-border bg-surface/70" />;
+    return <div className="h-[70vh] animate-pulse border border-border bg-surface/70" />;
   }
 
   if (error || !selectedSpace) {
     return (
-      <div className="rounded-lg border border-border bg-surface/80 p-8 text-muted">
+      <div className="border border-border bg-surface/80 p-8 text-muted">
         {error || "Learning space not found."}
       </div>
     );
   }
 
   return (
-    <div className="grid gap-6">
-      <header className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-blue-100">
-                {selectedSpace.progress}% complete
-              </span>
-              {selectedSpace.topic && (
-                <span className="rounded-md border border-border bg-background/70 px-2 py-0.5 text-xs text-muted">
-                  {selectedSpace.topic}
-                </span>
-              )}
-              {selectedCurriculum?.latest_job?.status && (
-                <span className="rounded-md border border-border bg-background/70 px-2 py-0.5 text-xs text-muted">
-                  Curriculum {selectedCurriculum.latest_job.status}
-                </span>
-              )}
-            </div>
-            <h1 className="mt-3 font-heading text-3xl font-semibold text-foreground sm:text-4xl">
+    <div className="pb-24">
+      <header className="mb-4 flex flex-col gap-4 border-b border-border/70 pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <Link
+            href="/spaces"
+            className="inline-flex items-center gap-2 text-xs text-muted transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-3.5" />
+            Learning Spaces
+          </Link>
+          <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-2">
+            <h1 className="font-heading text-2xl font-semibold text-foreground">
               {selectedSpace.title}
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-              {selectedSpace.description || "A focused path for structured video learning."}
-            </p>
+            {selectedSpace.topic ? (
+              <span className="pb-1 text-sm text-muted">{selectedSpace.topic}</span>
+            ) : null}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onRebuildCurriculum}
-              disabled={isRebuildingCurriculum}
-            >
-              {isRebuildingCurriculum ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-              Rebuild Curriculum
-            </Button>
-            <AddVideoDialog
-              spaces={[selectedSpace]}
-              spaceId={selectedSpace.id}
-              trigger={
-                <Button variant="secondary">
-                  <Plus />
-                  Add Video
-                </Button>
-              }
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="w-44">
+            <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+              <span className="text-muted">
+                {selectedSpace.completed_count}/{selectedSpace.video_count} lessons
+              </span>
+              <span className="font-mono text-warm">{selectedSpace.progress}%</span>
+            </div>
+            <Progress
+              value={selectedSpace.progress}
+              className="h-1 bg-white/[0.07] [&>div]:bg-warm"
             />
-            {nextVideo && (
-              <Button type="button" onClick={() => setActiveVideoId(nextVideo.id)}>
-                Continue
-                <ArrowRight />
-              </Button>
-            )}
           </div>
+          <AddVideoDialog
+            spaces={[selectedSpace]}
+            spaceId={selectedSpace.id}
+            trigger={
+              <Button variant="secondary" size="sm">
+                <Plus />
+                Add Video
+              </Button>
+            }
+          />
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[420px_1fr] 2xl:grid-cols-[500px_1fr]">
+      <div className="grid min-w-0 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <main className="min-w-0 xl:pr-5">
+          <div ref={playerSectionRef} className="scroll-mt-6">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeVideo?.id ?? "empty"}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <VideoPlayer
+                  ref={playerRef}
+                  video={activeVideo}
+                  onTimeUpdate={setCurrentPlaybackTime}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 min-w-0">
+            <div className="flex items-center justify-between gap-3 border-b border-border/70">
+              <TabsList className="h-auto rounded-none border-0 bg-transparent p-0">
+                <TabsTrigger
+                  value="transcript"
+                  className="rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
+                >
+                  Transcript
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notes"
+                  className="rounded-none border-b-2 border-transparent px-3 py-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
+                >
+                  Notes
+                </TabsTrigger>
+              </TabsList>
+
+              {activeVideo ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={activeVideo.completed ? "secondary" : "ghost"}
+                  disabled={updatingVideoId === activeVideo.id}
+                  onClick={() => void onToggle(activeVideo)}
+                >
+                  <CheckCircle2 />
+                  {activeVideo.completed ? "Completed" : "Mark complete"}
+                </Button>
+              ) : null}
+            </div>
+
+            <TabsContent value="transcript" className="mt-0">
+              <TranscriptPanel
+                video={activeVideo}
+                token={token}
+                onCompleted={onTranscriptCompleted}
+                activeTimestamp={activeTimestamp ?? currentPlaybackTime}
+                onSeek={handleSeek}
+              />
+            </TabsContent>
+
+            <TabsContent value="notes" className="mt-0">
+              <VideoNotesPanel
+                video={activeVideo}
+                token={token}
+                currentTimestamp={currentPlaybackTime}
+                onSeek={handleSeek}
+              />
+            </TabsContent>
+          </Tabs>
+
+          <LessonRail
+            modules={modules}
+            activeVideoId={activeVideo?.id ?? null}
+            onSelectVideo={handleSelectVideo}
+          />
+        </main>
+
         <CurriculumSidebar
           modules={modules}
           activeVideoId={activeVideo?.id ?? null}
           totalItems={videos.length}
-          healthScore={selectedCurriculum?.health.score ?? null}
-          jobStatus={selectedCurriculum?.latest_job?.status ?? null}
+          completedItems={selectedSpace.completed_count}
+          progress={selectedSpace.progress}
           isLoading={isCurriculumLoading}
           error={curriculumError}
-          isRebuilding={isRebuildingCurriculum}
-          overrideVideoId={overrideVideoId}
-          onSelectVideo={setActiveVideoId}
-          onRebuild={onRebuildCurriculum}
-          onMoveVideo={onMoveVideo}
-          onSetVideoOrder={onSetVideoOrder}
-          onResetVideo={onResetVideo}
+          onSelectVideo={handleSelectVideo}
         />
-
-        <section className="grid min-w-0 gap-5">
-          <div className="min-w-0">
-            <VideoPlayer
-              ref={playerRef}
-              video={activeVideo}
-              onTimeUpdate={(seconds) => setCurrentPlaybackTime(seconds)}
-            />
-
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mt-5">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="transcript">Transcript</TabsTrigger>
-                <TabsTrigger value="ai-summary">AI Summary</TabsTrigger>
-                <TabsTrigger value="notes">Notes</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview">
-                <CurriculumOverview
-                  space={selectedSpace}
-                  modules={modules}
-                  health={selectedCurriculum?.health ?? null}
-                  nextVideo={nextVideo ?? null}
-                  suggestedNextVideo={selectedCurriculum?.suggested_next_video ?? null}
-                  activeVideoId={activeVideo?.id ?? null}
-                  updatingVideoId={updatingVideoId}
-                  isRebuilding={isRebuildingCurriculum}
-                  onSelectVideo={(video) => setActiveVideoId(video.id)}
-                  onToggleVideo={onToggle}
-                  onRebuild={onRebuildCurriculum}
-                />
-              </TabsContent>
-
-              <TabsContent value="transcript">
-                <TranscriptPanel
-                  video={activeVideo}
-                  token={token}
-                  onCompleted={onTranscriptCompleted}
-                  activeTimestamp={activeTimestamp ?? currentPlaybackTime}
-                  onSeek={handleSeek}
-                />
-              </TabsContent>
-
-              <TabsContent value="ai-summary">
-                <LearningIntelligencePanel
-                  video={activeVideo}
-                  insights={aiSummary.insights}
-                  job={aiSummary.job}
-                  state={aiSummary.state}
-                  error={aiSummary.error}
-                  message={aiSummary.message}
-                  isWorking={aiSummary.isWorking}
-                  onGenerate={aiSummary.generate}
-                  onSeek={handleSeek}
-                />
-              </TabsContent>
-
-              <TabsContent value="notes">
-                <VideoNotesPanel
-                  video={activeVideo}
-                  token={token}
-                  currentTimestamp={currentPlaybackTime}
-                  insights={aiSummary.insights}
-                  onSeek={handleSeek}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </section>
       </div>
+
+      {followingVideo ? (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-24 right-4 z-30 lg:bottom-6 lg:right-6"
+        >
+          <Button
+            type="button"
+            size="lg"
+            onClick={handleContinue}
+            className="min-w-0 px-4 shadow-premium sm:min-w-44 sm:px-5"
+          >
+            <span className="sm:hidden">Continue</span>
+            <span className="hidden sm:inline">Continue Lesson</span>
+            <ArrowRight />
+          </Button>
+        </motion.div>
+      ) : null}
     </div>
   );
-}
-
-function findCurriculumEntry(curriculum: SpaceCurriculum, videoId: string) {
-  for (const learningModule of curriculum.modules) {
-    const entry = learningModule.module_videos.find((item) => item.video_id === videoId);
-    if (entry) {
-      return { module: learningModule, entry };
-    }
-  }
-  return null;
 }
 
 function buildFallbackModules(videos: RecallVideo[]): LearningModule[] {

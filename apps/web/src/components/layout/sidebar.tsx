@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  BookOpen,
-  Home,
-  LogOut,
-  Plus,
-  Settings,
-} from "lucide-react";
+import { BookOpen, Home, LogOut, Plus, Settings } from "lucide-react";
 
 import { Logo } from "@/components/logo";
 import { SearchTriggerButton } from "@/components/search/search-trigger-button";
@@ -28,7 +22,7 @@ export function Sidebar() {
   const logout = useAuthStore((state) => state.logout);
 
   return (
-    <aside className="hidden min-h-screen w-72 shrink-0 border-r border-border bg-background/75 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
+    <aside className="hidden min-h-screen w-60 shrink-0 border-r border-border/80 bg-background px-3 py-5 lg:flex lg:flex-col">
       <Logo />
 
       <SearchTriggerButton className="mt-5" />
@@ -42,8 +36,9 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted transition-all duration-200 hover:bg-white/[0.06] hover:text-foreground",
-                isActive && "bg-white/[0.07] text-foreground shadow-insetPanel",
+                "relative flex h-10 items-center gap-3 rounded-md px-3 text-sm text-muted transition-all duration-200 ease-premium hover:bg-white/[0.04] hover:text-foreground",
+                isActive &&
+                  "bg-primary/[0.09] text-foreground before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-primary",
               )}
             >
               <Icon className="size-4" />
@@ -53,7 +48,7 @@ export function Sidebar() {
         })}
       </div>
 
-      <div className="mt-auto grid gap-2">
+      <div className="mt-auto grid gap-2 border-t border-border/70 pt-4">
         <Button variant="secondary" className="justify-start" asChild>
           <Link href="/spaces">
             <Plus />

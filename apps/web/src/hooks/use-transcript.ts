@@ -95,7 +95,7 @@ export function useTranscript({ token, videoId, onCompleted }: UseTranscriptOpti
         setState("failed");
       }
     },
-    [token, videoId],
+    [onCompleted, refresh, token, videoId],
   );
 
   useEffect(() => {

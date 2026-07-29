@@ -84,9 +84,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   if (!video) {
     return (
-      <div className="grid aspect-video place-items-center rounded-lg border border-dashed border-border bg-surface/70 text-center shadow-insetPanel">
+      <div className="grid aspect-video place-items-center border border-dashed border-border bg-surface/70 text-center">
         <div>
-          <div className="mx-auto grid size-12 place-items-center rounded-md border border-border bg-background/80 text-primary">
+          <div className="mx-auto grid size-12 place-items-center rounded border border-border bg-background/80 text-primary">
             <Play className="size-5" />
           </div>
           <p className="mt-4 font-heading text-lg font-semibold text-foreground">
@@ -99,8 +99,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   }
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-black shadow-premium">
-      <div className="relative aspect-video bg-black">
+    <section className="overflow-hidden border border-border/80 bg-black shadow-premium">
+      <div className="relative aspect-video bg-black lg:aspect-[11/5]">
         {embedUrl ? (
           <iframe
             key={video.id}
@@ -129,9 +129,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           </div>
         )}
       </div>
-      <div className="flex flex-col gap-3 border-t border-border bg-surface/95 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-t border-border/80 bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="truncate font-heading text-base font-semibold text-foreground">
+          <p className="truncate font-heading text-sm font-semibold text-foreground sm:text-base">
             {video.title}
           </p>
           <p className="mt-1 text-xs text-muted">

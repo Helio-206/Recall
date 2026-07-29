@@ -54,7 +54,11 @@ class LearningInsightsService:
 
         active_job = self.jobs.active_for_video(video_id=video_id, user_id=user_id)
         if active_job:
-            if active_job.status == PENDING and active_job.attempts == 0 and self._resolved_provider_name() == "heuristic":
+            if (
+                active_job.status == PENDING
+                and active_job.attempts == 0
+                and self._resolved_provider_name() == "heuristic"
+            ):
                 return AISummaryJobRead.model_validate(self._process_inline_job(active_job))
             return AISummaryJobRead.model_validate(active_job)
 

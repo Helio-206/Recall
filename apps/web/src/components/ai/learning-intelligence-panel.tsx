@@ -1,6 +1,14 @@
 "use client";
 
-import { AlertCircle, BrainCircuit, Clock3, HelpCircle, Lightbulb, Loader2, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  Clock3,
+  FileText,
+  HelpCircle,
+  Lightbulb,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 
 import type { AISummaryJob, RecallVideo, VideoLearningInsights } from "@recall/shared";
 import { Button } from "@/components/ui/button";
@@ -56,9 +64,9 @@ export function LearningIntelligencePanel({
   if (!video) {
     return (
       <PanelState
-        icon={<BrainCircuit className="size-5" />}
+        icon={<FileText className="size-5" />}
         title="No video selected"
-        body="Choose a video to open its AI learning summary."
+        body="Choose a video to open its learning summary."
       />
     );
   }
@@ -67,7 +75,7 @@ export function LearningIntelligencePanel({
     return (
       <PanelState
         icon={<Loader2 className="size-5 animate-spin" />}
-        title="Loading AI insights..."
+        title="Loading learning insights..."
         body="Checking the latest learning analysis for this video."
       />
     );
@@ -94,10 +102,14 @@ export function LearningIntelligencePanel({
     return (
       <PanelState
         icon={<AlertCircle className="size-5" />}
-        title="AI analysis failed. Try again."
-        body={error || "The worker could not build the AI learning summary."}
+        title="Summary generation failed. Try again."
+        body={error || "The worker could not build the learning summary."}
         action={
-          <Button type="button" variant="secondary" onClick={() => void onGenerate({ force: true })}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void onGenerate({ force: true })}
+          >
             <RefreshCw />
             Retry
           </Button>
@@ -110,7 +122,7 @@ export function LearningIntelligencePanel({
     return (
       <PanelState
         icon={<Clock3 className="size-5" />}
-        title="AI insights are waiting on the transcript"
+        title="Learning insights are waiting on the transcript"
         body="Finish transcript generation first, then Recall can extract concepts, questions, and important moments."
       />
     );
@@ -119,12 +131,12 @@ export function LearningIntelligencePanel({
   if (!insights?.summary) {
     return (
       <PanelState
-        icon={<BrainCircuit className="size-5" />}
-        title="AI insights are not available yet."
+        icon={<FileText className="size-5" />}
+        title="Learning insights are not available yet."
         body="Generate a structured summary, key concepts, study questions, and important moments from this transcript."
         action={
           <Button type="button" onClick={() => void onGenerate()}>
-            Generate AI Summary
+            Generate Summary
           </Button>
         }
       />
@@ -135,10 +147,12 @@ export function LearningIntelligencePanel({
     <div className="grid gap-4">
       <section className="rounded-lg border border-primary/20 bg-primary/5 p-5 shadow-insetPanel">
         <div className="flex items-center gap-2 text-primary">
-          <BrainCircuit className="size-4" />
+          <FileText className="size-4" />
           <h2 className="font-heading text-base font-semibold text-foreground">Short Summary</h2>
         </div>
-        <p className="mt-3 text-sm leading-7 text-foreground/90">{insights.summary.short_summary}</p>
+        <p className="mt-3 text-sm leading-7 text-foreground/90">
+          {insights.summary.short_summary}
+        </p>
       </section>
 
       <section className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
@@ -161,7 +175,9 @@ export function LearningIntelligencePanel({
                 className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs text-foreground"
               >
                 {concept.concept}
-                <span className="ml-1 text-muted">{Math.round(concept.relevance_score * 100)}%</span>
+                <span className="ml-1 text-muted">
+                  {Math.round(concept.relevance_score * 100)}%
+                </span>
               </span>
             ))}
           </div>
@@ -174,7 +190,10 @@ export function LearningIntelligencePanel({
           </div>
           <ul className="mt-4 grid gap-3">
             {insights.key_takeaways.map((takeaway) => (
-              <li key={takeaway.id} className="rounded-md border border-border bg-background/55 px-3 py-2 text-sm leading-6 text-foreground/85">
+              <li
+                key={takeaway.id}
+                className="rounded-md border border-border bg-background/55 px-3 py-2 text-sm leading-6 text-foreground/85"
+              >
                 {takeaway.content}
               </li>
             ))}
@@ -186,11 +205,16 @@ export function LearningIntelligencePanel({
         <section className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
           <div className="flex items-center gap-2">
             <HelpCircle className="size-4 text-primary" />
-            <h3 className="font-heading text-base font-semibold text-foreground">Review Questions</h3>
+            <h3 className="font-heading text-base font-semibold text-foreground">
+              Review Questions
+            </h3>
           </div>
           <div className="mt-4 grid gap-3">
             {insights.review_questions.map((question) => (
-              <article key={question.id} className="rounded-md border border-border bg-background/55 p-4">
+              <article
+                key={question.id}
+                className="rounded-md border border-border bg-background/55 p-4"
+              >
                 <p className="text-sm font-medium text-foreground">{question.question}</p>
                 <p className="mt-2 text-sm leading-6 text-muted">{question.answer}</p>
               </article>
@@ -201,7 +225,9 @@ export function LearningIntelligencePanel({
         <section className="rounded-lg border border-border bg-surface/80 p-5 shadow-insetPanel">
           <div className="flex items-center gap-2">
             <Clock3 className="size-4 text-primary" />
-            <h3 className="font-heading text-base font-semibold text-foreground">Important Moments</h3>
+            <h3 className="font-heading text-base font-semibold text-foreground">
+              Important Moments
+            </h3>
           </div>
           <div className="mt-4 grid gap-2">
             {insights.important_moments.map((moment) => (
@@ -213,7 +239,9 @@ export function LearningIntelligencePanel({
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-foreground">{moment.title}</span>
-                  <span className="font-mono text-xs text-primary">{formatTimestamp(moment.timestamp)}</span>
+                  <span className="font-mono text-xs text-primary">
+                    {formatTimestamp(moment.timestamp)}
+                  </span>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-muted">{moment.description}</p>
               </button>
@@ -237,7 +265,7 @@ export function LearningNotesPanel({
   if (!video) {
     return (
       <PanelState
-        icon={<BrainCircuit className="size-5" />}
+        icon={<FileText className="size-5" />}
         title="No video selected"
         body="Choose a video to open its notes."
       />
@@ -249,7 +277,7 @@ export function LearningNotesPanel({
       <PanelState
         icon={<Loader2 className={cn("size-5", isWorking ? "animate-spin" : "")} />}
         title={message}
-        body="The notes view will be ready as soon as the AI summary completes."
+        body="The notes view will be ready as soon as the summary completes."
       />
     );
   }
@@ -258,10 +286,14 @@ export function LearningNotesPanel({
     return (
       <PanelState
         icon={<AlertCircle className="size-5" />}
-        title="AI analysis failed. Try again."
+        title="Summary generation failed. Try again."
         body={error || "The notes could not be generated."}
         action={
-          <Button type="button" variant="secondary" onClick={() => void onGenerate({ force: true })}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void onGenerate({ force: true })}
+          >
             <RefreshCw />
             Retry
           </Button>
@@ -275,7 +307,7 @@ export function LearningNotesPanel({
       <PanelState
         icon={<Lightbulb className="size-5" />}
         title="Notes are not available yet."
-        body="AI notes are generated from the transcript once the summary finishes."
+        body="Study notes are generated from the transcript once the summary finishes."
         action={
           video.transcript_status === "completed" ? (
             <Button type="button" onClick={() => void onGenerate()}>
@@ -292,7 +324,9 @@ export function LearningNotesPanel({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-heading text-lg font-semibold text-foreground">Study Notes</h2>
-          <p className="mt-1 text-sm text-muted">Auto-generated notes you can use as a quick review sheet.</p>
+          <p className="mt-1 text-sm text-muted">
+            Auto-generated notes you can use as a quick review sheet.
+          </p>
         </div>
         <Button type="button" variant="secondary" onClick={() => void onGenerate({ force: true })}>
           <RefreshCw />

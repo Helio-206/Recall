@@ -84,14 +84,14 @@ class GroqTranscriber:
         offset_seconds: float,
     ) -> list[TranscriptSegmentDraft]:
         settings = get_settings()
-        data: list[tuple[str, str]] = [
-            ("model", settings.groq_transcription_model),
-            ("response_format", "verbose_json"),
-            ("temperature", "0"),
-            ("timestamp_granularities[]", "segment"),
-        ]
+        data = {
+            "model": settings.groq_transcription_model,
+            "response_format": "verbose_json",
+            "temperature": "0",
+            "timestamp_granularities[]": "segment",
+        }
         if settings.whisper_language:
-            data.append(("language", settings.whisper_language))
+            data["language"] = settings.whisper_language
 
         with audio_path.open("rb") as audio_file:
             response = httpx.post(

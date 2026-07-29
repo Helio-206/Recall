@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "Recall",
   description: "A Learning OS for structured internet video learning.",
   icons: {
-    icon: "/recall-mark.svg",
+    icon: "/brand/recall-mark.png",
   },
 };
 

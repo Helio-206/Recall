@@ -28,6 +28,13 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
   exit 1
 fi
 
+RQ_BIN="$(dirname "$PYTHON_BIN")/rq"
+if [[ ! -x "$RQ_BIN" ]]; then
+  echo "[recall] error: RQ executable not found beside Python: $RQ_BIN"
+  echo "[recall] install API dependencies before starting workers."
+  exit 1
+fi
+
 cleanup() {
   local exit_code=$?
   trap - EXIT INT TERM
@@ -205,19 +212,19 @@ echo "[recall] starting api"
 api_pid=$!
 
 echo "[recall] starting ingestion worker"
-"$PYTHON_BIN" -m rq worker recall-ingestion --url redis://localhost:6379/0 &
+"$RQ_BIN" worker recall-ingestion --url redis://localhost:6379/0 &
 worker_pid=$!
 
 echo "[recall] starting transcript worker"
-"$PYTHON_BIN" -m rq worker recall-transcripts --url redis://localhost:6379/0 &
+"$RQ_BIN" worker recall-transcripts --url redis://localhost:6379/0 &
 transcript_worker_pid=$!
 
 echo "[recall] starting ai worker"
-"$PYTHON_BIN" -m rq worker ai-summary --url redis://localhost:6379/0 &
+"$RQ_BIN" worker ai-summary --url redis://localhost:6379/0 &
 ai_worker_pid=$!
 
 echo "[recall] starting curriculum worker"
-"$PYTHON_BIN" -m rq worker curriculum-reconstruction --url redis://localhost:6379/0 &
+"$RQ_BIN" worker curriculum-reconstruction --url redis://localhost:6379/0 &
 curriculum_worker_pid=$!
 
 echo "[recall] starting web"

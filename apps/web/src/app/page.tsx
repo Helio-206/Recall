@@ -4,9 +4,9 @@ import { cookies } from "next/headers";
 import { LandingPage } from "@/components/marketing/landing-page";
 
 export const metadata: Metadata = {
-  title: "Recall - Your learning OS for video",
+  title: "Recall - O seu sistema de aprendizagem para vídeos",
   description:
-    "Turn internet videos into structured learning paths, readable transcripts, and progress you can resume.",
+    "Transforme vídeos da internet em percursos de aprendizagem estruturados, transcrições legíveis e progresso contínuo.",
 };
 
 export default async function HomePage() {

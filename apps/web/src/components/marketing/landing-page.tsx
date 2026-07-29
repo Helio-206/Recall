@@ -15,40 +15,40 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Logo } from "@/components/logo";
+import { landingCopy, type LandingLocale } from "@/components/marketing/landing-copy";
 import { Button } from "@/components/ui/button";
 
 type LandingPageProps = {
   isAuthenticated: boolean;
 };
 
-const steps = [
-  {
-    number: "01",
-    icon: Link2,
-    title: "Add a source",
-    description: "Paste a YouTube video or playlist. Recall organizes the metadata automatically.",
-  },
-  {
-    number: "02",
-    icon: BookOpen,
-    title: "Build your path",
-    description: "Keep lessons ordered inside focused spaces with progress that stays visible.",
-  },
-  {
-    number: "03",
-    icon: Captions,
-    title: "Study with context",
-    description:
-      "Watch, read the synchronized transcript, take notes, and continue where you left off.",
-  },
-];
+const stepIcons = [Link2, BookOpen, Captions] as const;
+const localeStorageKey = "recall-landing-locale";
 
 export function LandingPage({ isAuthenticated }: LandingPageProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [locale, setLocale] = useState<LandingLocale>("pt");
+  const copy = landingCopy[locale];
+
+  useEffect(() => {
+    const storedLocale = window.localStorage.getItem(localeStorageKey);
+    if (storedLocale === "pt" || storedLocale === "en") {
+      setLocale(storedLocale);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(localeStorageKey, locale);
+    document.documentElement.lang = locale;
+
+    return () => {
+      document.documentElement.lang = "en";
+    };
+  }, [locale]);
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -108,35 +108,49 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
   }, []);
 
   const primaryHref = isAuthenticated ? "/dashboard" : "/register";
-  const primaryLabel = isAuthenticated ? "Open dashboard" : "Start learning";
+  const primaryLabel = isAuthenticated ? copy.actions.openDashboard : copy.actions.startLearning;
+  const navigationItems = [
+    [copy.navigation.product, "#product"],
+    [copy.navigation.flow, "#flow"],
+    [copy.navigation.study, "#study"],
+  ] as const;
+
+  function selectLocale(nextLocale: LandingLocale) {
+    setLocale(nextLocale);
+    setMenuOpen(false);
+  }
 
   return (
-    <div ref={rootRef} className="min-h-screen bg-background text-foreground">
+    <div ref={rootRef} lang={locale} className="min-h-screen bg-background text-foreground">
       <header className="fixed inset-x-0 top-0 z-40 border-b border-white/[0.06] bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 sm:px-8">
-          <Link href="/" aria-label="Recall home">
+          <Link href="/" aria-label={copy.navigation.home}>
             <Logo />
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex" aria-label="Main navigation">
-            <a
-              className="text-sm text-muted transition-colors hover:text-foreground"
-              href="#product"
-            >
-              Product
-            </a>
-            <a className="text-sm text-muted transition-colors hover:text-foreground" href="#flow">
-              How it works
-            </a>
-            <a className="text-sm text-muted transition-colors hover:text-foreground" href="#study">
-              Study experience
-            </a>
+          <nav className="hidden items-center gap-8 md:flex" aria-label={copy.navigation.label}>
+            {navigationItems.map(([label, href]) => (
+              <a
+                key={href}
+                className="text-sm text-muted transition-colors hover:text-foreground"
+                href={href}
+              >
+                {label}
+              </a>
+            ))}
           </nav>
 
           <div className="hidden items-center gap-2 md:flex">
+            <LanguageSelector
+              locale={locale}
+              label={copy.language.label}
+              portugueseLabel={copy.language.portuguese}
+              englishLabel={copy.language.english}
+              onSelect={selectLocale}
+            />
             {!isAuthenticated ? (
               <Button asChild variant="ghost">
-                <Link href="/login">Sign in</Link>
+                <Link href="/login">{copy.navigation.signIn}</Link>
               </Button>
             ) : null}
             <Button asChild>
@@ -147,25 +161,31 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
             </Button>
           </div>
 
-          <button
-            type="button"
-            className="flex size-10 items-center justify-center text-muted transition-colors hover:text-foreground md:hidden"
-            onClick={() => setMenuOpen((current) => !current)}
-            aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={menuOpen}
-          >
-            {menuOpen ? <X /> : <Menu />}
-          </button>
+          <div className="flex items-center gap-1 md:hidden">
+            <LanguageSelector
+              locale={locale}
+              label={copy.language.label}
+              portugueseLabel={copy.language.portuguese}
+              englishLabel={copy.language.english}
+              onSelect={selectLocale}
+              compact
+            />
+            <button
+              type="button"
+              className="flex size-10 items-center justify-center text-muted transition-colors hover:text-foreground"
+              onClick={() => setMenuOpen((current) => !current)}
+              aria-label={menuOpen ? copy.navigation.closeMenu : copy.navigation.openMenu}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X /> : <Menu />}
+            </button>
+          </div>
         </div>
 
         {menuOpen ? (
           <div className="border-t border-border bg-background px-5 py-5 md:hidden">
-            <nav className="grid gap-1" aria-label="Mobile navigation">
-              {[
-                ["Product", "#product"],
-                ["How it works", "#flow"],
-                ["Study experience", "#study"],
-              ].map(([label, href]) => (
+            <nav className="grid gap-1" aria-label={copy.navigation.mobileLabel}>
+              {navigationItems.map(([label, href]) => (
                 <a
                   key={href}
                   href={href}
@@ -191,15 +211,14 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
           >
             <div className="inline-flex items-center gap-2 border border-border bg-surface px-3 py-1.5 font-mono text-[11px] uppercase text-muted">
               <span className="size-1.5 bg-success" />
-              Built for focused, continuous learning
+              {copy.hero.badge}
             </div>
             <h1 className="mt-7 max-w-4xl font-heading text-4xl font-semibold leading-[1.08] sm:text-6xl lg:text-7xl">
-              Your learning OS
-              <span className="block text-muted">for internet video.</span>
+              {copy.hero.title}
+              <span className="block text-muted">{copy.hero.titleAccent}</span>
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-7 text-muted sm:text-lg sm:leading-8">
-              Recall turns scattered videos into structured learning paths with synchronized
-              transcripts, clear progress, and a place to continue.
+              {copy.hero.description}
             </p>
             <div className="mt-8 flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
               <Button asChild size="lg" className="min-w-44">
@@ -211,7 +230,7 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
               <Button asChild size="lg" variant="secondary" className="min-w-44">
                 <a href="#product">
                   <Play className="fill-current" />
-                  See the product
+                  {copy.actions.seeProduct}
                 </a>
               </Button>
             </div>
@@ -233,7 +252,7 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
               </div>
               <Image
                 src="/product/dashboard.png"
-                alt="Recall dashboard showing learning spaces, progress, and recent activity"
+                alt={copy.hero.dashboardAlt}
                 width={1440}
                 height={1024}
                 priority
@@ -246,13 +265,12 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
         <section id="flow" className="border-b border-border bg-surface/40 py-24 sm:py-32">
           <div className="mx-auto max-w-[1200px] px-5 sm:px-8">
             <div data-reveal className="max-w-2xl">
-              <p className="font-mono text-xs uppercase text-primary">A clearer learning loop</p>
+              <p className="font-mono text-xs uppercase text-primary">{copy.flow.eyebrow}</p>
               <h2 className="mt-4 font-heading text-3xl font-semibold sm:text-5xl">
-                From link to learning path.
+                {copy.flow.title}
               </h2>
               <p className="mt-5 text-base leading-7 text-muted sm:text-lg">
-                No complex setup. Add the material you already trust and keep the learning context
-                around it.
+                {copy.flow.description}
               </p>
             </div>
 
@@ -260,16 +278,18 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
               data-flow-grid
               className="mt-14 grid border-y border-border md:grid-cols-3 md:divide-x md:divide-border"
             >
-              {steps.map((step) => {
-                const Icon = step.icon;
+              {copy.flow.steps.map((step, index) => {
+                const Icon = stepIcons[index];
                 return (
                   <article
-                    key={step.number}
+                    key={step.title}
                     data-flow-step
                     className="border-b border-border py-8 last:border-b-0 md:border-b-0 md:px-8 md:first:pl-0 md:last:pr-0"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs text-muted">{step.number}</span>
+                      <span className="font-mono text-xs text-muted">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
                       <Icon className="size-5 text-primary" aria-hidden="true" />
                     </div>
                     <h3 className="mt-10 font-heading text-xl font-semibold">{step.title}</h3>
@@ -284,13 +304,12 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
         <section id="study" className="overflow-hidden border-b border-border py-24 sm:py-32">
           <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
             <div data-reveal className="mx-auto max-w-3xl text-center">
-              <p className="font-mono text-xs uppercase text-warm">Study with context</p>
+              <p className="font-mono text-xs uppercase text-warm">{copy.study.eyebrow}</p>
               <h2 className="mt-4 font-heading text-3xl font-semibold sm:text-5xl">
-                Video and transcript, in sync.
+                {copy.study.title}
               </h2>
               <p className="mt-5 text-base leading-7 text-muted sm:text-lg">
-                Navigate the curriculum, follow the complete transcript, and resume the exact lesson
-                that matters.
+                {copy.study.description}
               </p>
             </div>
 
@@ -298,7 +317,7 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
               <div className="overflow-hidden border border-border bg-surface p-1 shadow-premium">
                 <Image
                   src="/product/study-transcript.png"
-                  alt="Recall study workspace with video, synchronized transcript, and curriculum"
+                  alt={copy.study.desktopAlt}
                   width={1440}
                   height={1024}
                   className="h-auto w-full"
@@ -307,7 +326,7 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
               <div className="absolute -bottom-8 right-4 hidden w-[210px] overflow-hidden border border-border bg-surface p-1 shadow-premium sm:block lg:right-10 lg:w-[260px]">
                 <Image
                   src="/product/study-mobile.png"
-                  alt="Recall study workspace on mobile"
+                  alt={copy.study.mobileAlt}
                   width={390}
                   height={844}
                   className="h-auto w-full"
@@ -319,26 +338,24 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
               data-reveal
               className="mt-20 grid gap-4 border-t border-border pt-8 sm:grid-cols-3"
             >
-              {["Timestamp navigation", "Automatic progress", "Curriculum continuity"].map(
-                (item) => (
-                  <div key={item} className="flex items-center gap-3 text-sm text-muted">
-                    <span className="flex size-5 items-center justify-center border border-success/40 text-success">
-                      <Check className="size-3" />
-                    </span>
-                    {item}
-                  </div>
-                ),
-              )}
+              {copy.study.benefits.map((item) => (
+                <div key={item} className="flex items-center gap-3 text-sm text-muted">
+                  <span className="flex size-5 items-center justify-center border border-success/40 text-success">
+                    <Check className="size-3" />
+                  </span>
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         <section className="py-24 sm:py-32">
           <div data-reveal className="mx-auto max-w-4xl px-5 text-center sm:px-8">
-            <p className="font-mono text-xs uppercase text-muted">One workspace. Every lesson.</p>
+            <p className="font-mono text-xs uppercase text-muted">{copy.closing.eyebrow}</p>
             <h2 className="mt-5 font-heading text-3xl font-semibold sm:text-5xl">
-              Stop collecting videos.
-              <span className="block text-muted">Start building knowledge.</span>
+              {copy.closing.title}
+              <span className="block text-muted">{copy.closing.titleAccent}</span>
             </h2>
             <Button asChild size="lg" className="mt-8">
               <Link href={primaryHref}>
@@ -353,19 +370,65 @@ export function LandingPage({ isAuthenticated }: LandingPageProps) {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <Logo />
-          <p className="text-xs text-muted">
-            Structured learning from the content you already trust.
-          </p>
+          <p className="text-xs text-muted">{copy.footer.description}</p>
           <div className="flex gap-5 text-xs text-muted">
             <Link href="/login" className="hover:text-foreground">
-              Sign in
+              {copy.navigation.signIn}
             </Link>
             <Link href="/register" className="hover:text-foreground">
-              Create account
+              {copy.actions.createAccount}
             </Link>
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+type LanguageSelectorProps = {
+  locale: LandingLocale;
+  label: string;
+  portugueseLabel: string;
+  englishLabel: string;
+  onSelect: (locale: LandingLocale) => void;
+  compact?: boolean;
+};
+
+function LanguageSelector({
+  locale,
+  label,
+  portugueseLabel,
+  englishLabel,
+  onSelect,
+  compact = false,
+}: LanguageSelectorProps) {
+  return (
+    <div
+      className="flex h-8 items-center border border-border bg-surface p-0.5"
+      role="group"
+      aria-label={label}
+    >
+      {(
+        [
+          ["pt", "PT", portugueseLabel],
+          ["en", "EN", englishLabel],
+        ] as const
+      ).map(([value, shortLabel, accessibleLabel]) => (
+        <button
+          key={value}
+          type="button"
+          className={`flex h-7 min-w-8 items-center justify-center px-2 font-mono text-[10px] transition-colors ${
+            locale === value
+              ? "bg-white/[0.08] text-foreground"
+              : "text-muted hover:text-foreground"
+          } ${compact ? "px-1.5" : ""}`}
+          onClick={() => onSelect(value)}
+          aria-label={accessibleLabel}
+          aria-pressed={locale === value}
+        >
+          {shortLabel}
+        </button>
+      ))}
     </div>
   );
 }

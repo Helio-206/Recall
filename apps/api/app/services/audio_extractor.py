@@ -37,10 +37,11 @@ class TemporaryAudioExtractor:
             "postprocessors": [
                 {
                     "key": "FFmpegExtractAudio",
-                    "preferredcodec": "wav",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "48",
                 }
             ],
-            "postprocessor_args": ["-ac", "1", "-ar", "16000"],
+            "postprocessor_args": ["-ac", "1", "-ar", "16000", "-b:a", "48k"],
         }
 
         try:

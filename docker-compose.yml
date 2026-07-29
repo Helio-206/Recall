@@ -1,5 +1,6 @@
 services:
   postgres:
+    profiles: ["local-db"]
     image: postgres:16-alpine
     container_name: recall-postgres
     restart: unless-stopped
@@ -57,7 +58,7 @@ services:
     container_name: recall-api
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must point to the Supabase Session pooler}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
       GOOGLE_OAUTH_CLIENT_IDS: ${GOOGLE_OAUTH_CLIENT_IDS:-}
@@ -71,6 +72,12 @@ services:
       TRANSCRIPT_JOB_TIMEOUT_SECONDS: ${TRANSCRIPT_JOB_TIMEOUT_SECONDS:-7200}
       TRANSCRIPT_RETRY_ATTEMPTS: ${TRANSCRIPT_RETRY_ATTEMPTS:-1}
       TRANSCRIPT_TMP_PATH: ${TRANSCRIPT_TMP_PATH:-/tmp/recall-transcripts}
+      TRANSCRIPT_PROVIDER: ${TRANSCRIPT_PROVIDER:-auto}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_TRANSCRIPTION_MODEL: ${GROQ_TRANSCRIPTION_MODEL:-whisper-large-v3-turbo}
+      GROQ_TIMEOUT_SECONDS: ${GROQ_TIMEOUT_SECONDS:-120}
+      GROQ_MAX_UPLOAD_BYTES: ${GROQ_MAX_UPLOAD_BYTES:-25165824}
+      GROQ_CHUNK_DURATION_SECONDS: ${GROQ_CHUNK_DURATION_SECONDS:-1200}
       WHISPER_MODEL_NAME: ${WHISPER_MODEL_NAME:-tiny}
       WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-}
       WHISPER_FP16: ${WHISPER_FP16:-false}
@@ -108,8 +115,6 @@ services:
     volumes:
       - ./apps/api/storage:/app/storage
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       meilisearch:
@@ -129,7 +134,7 @@ services:
         "${REDIS_URL:-redis://redis:6379/0}",
       ]
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must point to the Supabase Session pooler}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
@@ -142,6 +147,12 @@ services:
       TRANSCRIPT_JOB_TIMEOUT_SECONDS: ${TRANSCRIPT_JOB_TIMEOUT_SECONDS:-7200}
       TRANSCRIPT_RETRY_ATTEMPTS: ${TRANSCRIPT_RETRY_ATTEMPTS:-1}
       TRANSCRIPT_TMP_PATH: ${TRANSCRIPT_TMP_PATH:-/tmp/recall-transcripts}
+      TRANSCRIPT_PROVIDER: ${TRANSCRIPT_PROVIDER:-auto}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_TRANSCRIPTION_MODEL: ${GROQ_TRANSCRIPTION_MODEL:-whisper-large-v3-turbo}
+      GROQ_TIMEOUT_SECONDS: ${GROQ_TIMEOUT_SECONDS:-120}
+      GROQ_MAX_UPLOAD_BYTES: ${GROQ_MAX_UPLOAD_BYTES:-25165824}
+      GROQ_CHUNK_DURATION_SECONDS: ${GROQ_CHUNK_DURATION_SECONDS:-1200}
       WHISPER_MODEL_NAME: ${WHISPER_MODEL_NAME:-tiny}
       WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-}
       WHISPER_FP16: ${WHISPER_FP16:-false}
@@ -151,8 +162,6 @@ services:
       SEARCH_API_KEY: ${SEARCH_API_KEY:-}
       SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       meilisearch:
@@ -172,7 +181,7 @@ services:
         "${REDIS_URL:-redis://redis:6379/0}",
       ]
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must point to the Supabase Session pooler}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
@@ -206,8 +215,6 @@ services:
       SEARCH_API_KEY: ${SEARCH_API_KEY:-}
       SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       meilisearch:
@@ -227,7 +234,7 @@ services:
         "${REDIS_URL:-redis://redis:6379/0}",
       ]
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must point to the Supabase Session pooler}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
@@ -252,8 +259,6 @@ services:
       SEARCH_API_KEY: ${SEARCH_API_KEY:-}
       SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       meilisearch:
@@ -273,7 +278,7 @@ services:
         "${REDIS_URL:-redis://redis:6379/0}",
       ]
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://recall:recall@postgres:5432/recall}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must point to the Supabase Session pooler}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-before-production}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
@@ -281,6 +286,12 @@ services:
       TRANSCRIPT_JOB_TIMEOUT_SECONDS: ${TRANSCRIPT_JOB_TIMEOUT_SECONDS:-7200}
       TRANSCRIPT_RETRY_ATTEMPTS: ${TRANSCRIPT_RETRY_ATTEMPTS:-1}
       TRANSCRIPT_TMP_PATH: ${TRANSCRIPT_TMP_PATH:-/tmp/recall-transcripts}
+      TRANSCRIPT_PROVIDER: ${TRANSCRIPT_PROVIDER:-auto}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_TRANSCRIPTION_MODEL: ${GROQ_TRANSCRIPTION_MODEL:-whisper-large-v3-turbo}
+      GROQ_TIMEOUT_SECONDS: ${GROQ_TIMEOUT_SECONDS:-120}
+      GROQ_MAX_UPLOAD_BYTES: ${GROQ_MAX_UPLOAD_BYTES:-25165824}
+      GROQ_CHUNK_DURATION_SECONDS: ${GROQ_CHUNK_DURATION_SECONDS:-1200}
       WHISPER_MODEL_NAME: ${WHISPER_MODEL_NAME:-tiny}
       WHISPER_LANGUAGE: ${WHISPER_LANGUAGE:-}
       WHISPER_FP16: ${WHISPER_FP16:-false}
@@ -290,8 +301,6 @@ services:
       SEARCH_API_KEY: ${SEARCH_API_KEY:-}
       SEARCH_INDEX_UID: ${SEARCH_INDEX_UID:-learning-content}
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       meilisearch:

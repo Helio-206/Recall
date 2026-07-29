@@ -169,6 +169,41 @@ PY
 
 cd "$ROOT_DIR"
 
+read_database_url_from_api_env() {
+  "$PYTHON_BIN" - "$API_DIR/.env" <<'PY'
+from pathlib import Path
+import sys
+
+env_path = Path(sys.argv[1])
+if not env_path.exists():
+    raise SystemExit(0)
+
+for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+    line = raw_line.strip()
+    if not line or line.startswith("#") or not line.startswith("DATABASE_URL="):
+        continue
+    value = line.partition("=")[2].strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        value = value[1:-1]
+    print(value)
+    break
+PY
+}
+
+database_url_is_local() {
+  case "$1" in
+    *"@localhost:"* | *"@127.0.0.1:"* | *"@postgres:"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if [[ -z "${DATABASE_URL:-}" ]]; then
+  configured_database_url="$(read_database_url_from_api_env)"
+  if [[ -n "$configured_database_url" ]]; then
+    export DATABASE_URL="$configured_database_url"
+  fi
+fi
+
 API_PORT="${API_PORT:-8000}"
 WEB_PORT="${WEB_PORT:-3000}"
 
@@ -190,18 +225,23 @@ WEB_PORT="$resolved_web_port"
 
 export BACKEND_CORS_ORIGINS="${BACKEND_CORS_ORIGINS:-http://localhost:${WEB_PORT},http://127.0.0.1:${WEB_PORT}}"
 
-echo "[recall] starting infra containers"
-docker-compose up -d --no-recreate postgres redis meilisearch
+if [[ -z "${DATABASE_URL:-}" ]] || database_url_is_local "$DATABASE_URL"; then
+  echo "[recall] starting local PostgreSQL fallback and infra containers"
+  docker-compose --profile local-db up -d --no-recreate postgres redis meilisearch
 
-postgres_port="${POSTGRES_PORT:-$(docker-compose port postgres 5432 | awk -F: 'END {print $NF}')}"
-postgres_port="${postgres_port//[[:space:]]/}"
+  postgres_port="${POSTGRES_PORT:-$(docker-compose port postgres 5432 | awk -F: 'END {print $NF}')}"
+  postgres_port="${postgres_port//[[:space:]]/}"
 
-export POSTGRES_HOST="${POSTGRES_HOST:-127.0.0.1}"
-export POSTGRES_PORT="$postgres_port"
-export POSTGRES_USER="${POSTGRES_USER:-recall}"
-export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-recall}"
-export POSTGRES_DB="${POSTGRES_DB:-recall}"
-export DATABASE_URL="${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}}"
+  export POSTGRES_HOST="${POSTGRES_HOST:-127.0.0.1}"
+  export POSTGRES_PORT="$postgres_port"
+  export POSTGRES_USER="${POSTGRES_USER:-recall}"
+  export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-recall}"
+  export POSTGRES_DB="${POSTGRES_DB:-recall}"
+  export DATABASE_URL="${DATABASE_URL:-postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}}"
+else
+  echo "[recall] using configured external PostgreSQL database"
+  docker-compose up -d --no-recreate redis meilisearch
+fi
 
 echo "[recall] applying database migrations"
 cd "$API_DIR"

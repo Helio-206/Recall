@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 
     database_url: str = "postgresql+psycopg://recall:recall@localhost:5433/recall"
+    database_pool_size: int = 5
+    database_max_overflow: int = 5
+    database_pool_recycle_seconds: int = 300
+    database_pool_timeout_seconds: int = 30
     redis_url: str = "redis://localhost:6379/0"
 
     ingestion_queue_name: str = "recall-ingestion"
@@ -38,9 +42,15 @@ class Settings(BaseSettings):
     transcript_retry_attempts: int = 1
     transcript_tmp_path: Path = Path("/tmp/recall-transcripts")
     transcript_prefer_youtube_captions: bool = True
+    transcript_provider: str = "auto"
     whisper_model_name: str = "tiny"
     whisper_language: str | None = None
     whisper_fp16: bool = False
+    groq_api_key: str | None = None
+    groq_transcription_model: str = "whisper-large-v3-turbo"
+    groq_timeout_seconds: float = 120.0
+    groq_max_upload_bytes: int = 24 * 1024 * 1024
+    groq_chunk_duration_seconds: int = 20 * 60
 
     jwt_secret_key: str = Field(default="change-me-before-production", min_length=16)
     jwt_algorithm: str = "HS256"

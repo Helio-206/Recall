@@ -256,7 +256,7 @@ echo "[recall] starting ingestion worker"
 worker_pid=$!
 
 echo "[recall] starting transcript worker"
-"$RQ_BIN" worker recall-transcripts --url redis://localhost:6379/0 &
+"$RQ_BIN" worker recall-transcripts --with-scheduler --url redis://localhost:6379/0 &
 transcript_worker_pid=$!
 
 echo "[recall] starting ai worker"

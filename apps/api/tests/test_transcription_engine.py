@@ -44,13 +44,13 @@ def test_groq_transcriber_preserves_segment_timestamps(monkeypatch, tmp_path: Pa
         (0.5, 2.0, "First sentence."),
         (2.0, 4.5, "Second sentence."),
     ]
-    assert captured["data"] == [
-        ("model", "whisper-large-v3-turbo"),
-        ("response_format", "verbose_json"),
-        ("temperature", "0"),
-        ("timestamp_granularities[]", "segment"),
-        ("language", "pt"),
-    ]
+    assert captured["data"] == {
+        "model": "whisper-large-v3-turbo",
+        "response_format": "verbose_json",
+        "temperature": "0",
+        "timestamp_granularities[]": "segment",
+        "language": "pt",
+    }
 
 
 def test_auto_provider_uses_groq_only_when_a_key_exists(monkeypatch) -> None:

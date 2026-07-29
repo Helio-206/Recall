@@ -4,7 +4,7 @@ from types import ModuleType, SimpleNamespace
 from app.services.audio_extractor import TemporaryAudioExtractor
 
 
-def test_extract_prefers_wav_output(monkeypatch, tmp_path: Path) -> None:
+def test_extracts_compact_mp3_audio(monkeypatch, tmp_path: Path) -> None:
     captured_options: dict[str, object] = {}
 
     class FakeYoutubeDL:
@@ -20,7 +20,7 @@ def test_extract_prefers_wav_output(monkeypatch, tmp_path: Path) -> None:
         def extract_info(self, video_url: str, download: bool = True) -> dict[str, object]:
             assert video_url == "https://example.com/watch?v=123"
             assert download is True
-            (tmp_path / "source.wav").write_bytes(b"RIFF")
+            (tmp_path / "source.mp3").write_bytes(b"ID3")
             return {"id": "123"}
 
     fake_yt_dlp = ModuleType("yt_dlp")
@@ -46,9 +46,13 @@ def test_extract_prefers_wav_output(monkeypatch, tmp_path: Path) -> None:
         output_dir=tmp_path,
     )
 
-    assert audio_path == tmp_path / "source.wav"
+    assert audio_path == tmp_path / "source.mp3"
     assert captured_options["ffmpeg_location"] == "/usr/bin/ffmpeg"
-    assert captured_options["postprocessor_args"] == ["-ac", "1", "-ar", "16000"]
+    assert captured_options["postprocessor_args"] == ["-ac", "1", "-ar", "16000", "-b:a", "48k"]
     assert captured_options["postprocessors"] == [
-        {"key": "FFmpegExtractAudio", "preferredcodec": "wav"}
+        {
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "48",
+        }
     ]

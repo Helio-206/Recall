@@ -38,8 +38,8 @@ Browser / Extension
        │
   ┌────┴────┐
   │         │
-PostgreSQL  Redis
-  (data)   (queues)
+Supabase Postgres  Redis
+     (data)         (queues)
               │
        ┌──────┼──────┬──────────────────┐
        ▼      ▼      ▼                  ▼
@@ -86,6 +86,7 @@ extension/               ← Chrome/Edge Manifest V3 browser extension
 scripts/dev-all.sh       ← Single-command local dev runner
 docker/                  ← Postgres init SQL + Redis config
 docker-compose.yml       ← Infra + app services
+supabase/migrations/     ← Applied Supabase bootstrap and security migrations
 ```
 
 ---
@@ -147,7 +148,7 @@ Video created → TranscriptJob enqueued in recall-transcripts
           2. If no captions:
              a. yt-dlp downloads audio-only (m4a/webm)
              b. FFmpeg converts to wav
-             c. faster-whisper transcribes
+             c. Groq Whisper transcribes
                 with VAD filter enabled
                                   │
                 TranscriptSegment rows saved
@@ -166,6 +167,8 @@ Key settings:
 | `WHISPER_FP16` | `false` | Enable FP16 — requires a CUDA GPU |
 | `TRANSCRIPT_PREFER_YOUTUBE_CAPTIONS` | `true` | Use YT captions as fast path |
 | `TRANSCRIPT_JOB_TIMEOUT_SECONDS` | `7200` | Max job duration |
+| `TRANSCRIPT_PROVIDER` | `auto` | `groq` / `faster-whisper` / `auto` |
+| `GROQ_TRANSCRIPTION_MODEL` | `whisper-large-v3-turbo` | Fast multilingual cloud transcription |
 
 > Use `base` or `small` for better accuracy. `large-v3` is the best quality but requires a GPU.
 
@@ -447,7 +450,7 @@ cd apps/api && ruff check .
 
 ```bash
 cp .env.example .env
-# Edit .env — at minimum set JWT_SECRET_KEY
+# Edit .env — set DATABASE_URL to the Supabase Session pooler URL and JWT_SECRET_KEY
 
 docker compose up --build
 ```
@@ -456,11 +459,40 @@ docker compose up --build
 |---|---|
 | web | 3000 |
 | api | 8000 |
-| postgres | 5433 |
+| postgres | 5433 (local fallback profile only) |
 | redis | 6379 |
 | meilisearch | 7700 |
 
-The `api` container applies Alembic migrations on startup.
+The `api` container applies Alembic migrations on startup. The local Postgres container is retained only as a rollback/development fallback and is not started by default. To use it explicitly, run `docker compose --profile local-db up --build`.
+
+---
+
+## Supabase database
+
+Recall uses Supabase Postgres for the primary database. The API and RQ workers continue to own authentication and database access through SQLAlchemy; the frontend does not use the Supabase Data API.
+
+The project is in `eu-west-1`. In Supabase Dashboard, open **Connect**, select **Session pooler**, replace `[YOUR-PASSWORD]`, and set this value in `apps/api/.env`:
+
+```dotenv
+DATABASE_URL=postgresql+psycopg://postgres.[PROJECT-REF]:[YOUR-PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+The session pooler is the correct mode for the persistent FastAPI process and RQ workers. Do not use the transaction pooler for these processes.
+
+`scripts/dev-all.sh` automatically uses `DATABASE_URL` from the shell or `apps/api/.env`. When it is set, only Redis and Meilisearch start locally:
+
+```bash
+./scripts/dev-all.sh
+```
+
+Verify the production database before a cutover:
+
+```bash
+export DATABASE_URL='postgresql+psycopg://...'
+./scripts/verify-supabase-database.sh
+```
+
+The bootstrap and security SQL applied to the hosted database are tracked in `supabase/migrations/`. Local Alembic migrations remain the source of truth for application schema changes.
 
 ---
 
@@ -472,12 +504,15 @@ Copy `.env.example` → `.env` (Docker) and `apps/api/.env.example` → `apps/ap
 
 ### Core
 
-| Variable | Description |
-|---|---|
-| `JWT_SECRET_KEY` | **Change in production.** Any random 32+ character string |
-| `DATABASE_URL` | PostgreSQL connection string |
-| `REDIS_URL` | Redis connection string |
-| `BACKEND_CORS_ORIGINS` | Allowed CORS origins (comma-separated) |
+| Variable | Default | Description |
+|---|---|---|
+| `JWT_SECRET_KEY` | — | **Change in production.** Any random 32+ character string |
+| `DATABASE_URL` | — | Supabase Session pooler connection string |
+| `DATABASE_POOL_SIZE` | `5` | Persistent connections kept per API/worker process |
+| `DATABASE_MAX_OVERFLOW` | `5` | Temporary connections allowed above the pool size |
+| `DATABASE_POOL_RECYCLE_SECONDS` | `300` | Recycle connections before pooler idle limits |
+| `REDIS_URL` | — | Redis connection string |
+| `BACKEND_CORS_ORIGINS` | — | Allowed CORS origins (comma-separated) |
 
 ### Ingestion
 
@@ -495,6 +530,9 @@ Copy `.env.example` → `.env` (Docker) and `apps/api/.env.example` → `apps/ap
 | `WHISPER_FP16` | `false` | Float16 — GPU only |
 | `TRANSCRIPT_PREFER_YOUTUBE_CAPTIONS` | `true` | Use YT captions as fast path |
 | `TRANSCRIPT_TMP_PATH` | `/tmp/recall-transcripts` | Temp audio directory |
+| `TRANSCRIPT_PROVIDER` | `auto` | Uses Groq when `GROQ_API_KEY` exists; otherwise local Whisper |
+| `GROQ_API_KEY` | — | Required for Groq cloud transcription |
+| `GROQ_TRANSCRIPTION_MODEL` | `whisper-large-v3-turbo` | Groq speech-to-text model |
 
 ### AI
 
@@ -554,7 +592,7 @@ alembic downgrade -1
 |---|---|
 | Frontend | Next.js 15, React 19, TypeScript, Tailwind CSS, Zustand |
 | Backend | FastAPI, SQLAlchemy 2, Pydantic v2, Python 3.12 |
-| Database | PostgreSQL 16 |
+| Database | Supabase Postgres |
 | Queue | Redis 7 + RQ |
 | Transcription | faster-whisper, yt-dlp, FFmpeg |
 | Search | Meilisearch v1 |

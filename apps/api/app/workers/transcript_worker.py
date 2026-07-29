@@ -15,7 +15,7 @@ from app.repositories.videos import VideoRepository
 from app.services.audio_extractor import TemporaryAudioExtractor
 from app.services.caption_extractor import CaptionExtractionError, YouTubeCaptionExtractor
 from app.services.search_indexing import sync_video_search_documents
-from app.services.transcription_engine import WhisperTranscriber
+from app.services.transcription_engine import configured_transcription_model, get_transcriber
 from app.services.transcripts import clean_transcript_error, merge_payload
 
 logger = logging.getLogger(__name__)
@@ -95,14 +95,16 @@ def process_transcript_job(job_id: str) -> None:
                     output_dir=Path(temp_dir),
                 )
 
+                provider, transcriber = get_transcriber()
                 transcript_job.payload = merge_payload(
                     transcript_job.payload,
                     phase="generating_transcript",
-                    method="faster-whisper",
+                    method=provider,
+                    model=configured_transcription_model(),
                 )
                 db.commit()
 
-                drafts = WhisperTranscriber().transcribe(audio_path)
+                drafts = transcriber.transcribe(audio_path)
                 transcript_job.payload = merge_payload(
                     transcript_job.payload,
                     phase="structuring_transcript",

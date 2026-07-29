@@ -22,6 +22,7 @@ from app.schemas.transcript import (
 )
 from app.services.caption_extractor import CaptionExtractionError, YouTubeCaptionExtractor
 from app.services.search_indexing import sync_video_search_documents
+from app.services.transcription_engine import configured_transcription_model
 
 
 class TranscriptService:
@@ -112,7 +113,7 @@ class TranscriptService:
                 "phase": phase,
                 "video_url": video.url,
                 "segments_count": 0,
-                "model": self.settings.whisper_model_name,
+                "model": configured_transcription_model(),
             },
         )
         self.db.flush()
